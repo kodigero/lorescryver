@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import ScryvePanel from '@/components/scryve-panel';
+import { DomainProvider, useDomain } from '@/contexts/domain-context';
 
-/* ── Icons ──────────────────────────────────────────────────────────── */
+/* ── Icons ────────────────────────────────────────────────────────────────── */
 
 function QuillIcon({ className }: { className?: string }) {
   return (
@@ -120,7 +121,7 @@ function HelpCircleIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Navigation items ───────────────────────────────────────────────── */
+/* ── Navigation items ─────────────────────────────────────────────────── */
 
 const navItems = [
   { label: 'Projects', href: '/dashboard', icon: FolderIcon },
@@ -152,14 +153,42 @@ const notifications = [
   },
 ];
 
-/* ── Layout ─────────────────────────────────────────────────────────── */
+/* ── Domain Toggle (rendered in top bar when inside a project) ──── */
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DomainToggle() {
+  const { activeDomain, setActiveDomain, deliveryLabel } = useDomain();
+
+  return (
+    <div className="flex h-7 items-center rounded-lg bg-white/[0.04] border border-white/5 p-0.5">
+      <button
+        onClick={() => setActiveDomain('foundation')}
+        className={`h-6 rounded-md px-3.5 text-xs font-semibold transition ${
+          activeDomain === 'foundation'
+            ? 'bg-brand-600/20 text-brand-400'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Story Foundation
+      </button>
+      <button
+        onClick={() => setActiveDomain('delivery')}
+        className={`h-6 rounded-md px-3.5 text-xs font-semibold transition ${
+          activeDomain === 'delivery'
+            ? 'bg-brand-600/20 text-brand-400'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Delivery · {deliveryLabel}
+      </button>
+    </div>
+  );
+}
+
+/* ── Inner Layout (needs context) ─────────────────────────────────── */
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isInsideProject } = useDomain();
   const [isDark, setIsDark] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,9 +198,6 @@ export default function DashboardLayout({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // Hide the outer sidebar when inside a project workspace
-  const isInsideProject = pathname.startsWith('/dashboard/project/');
 
   // Focus search input when opened
   useEffect(() => {
@@ -233,7 +259,7 @@ export default function DashboardLayout({
   return (
     <div className={`flex h-screen flex-col overflow-hidden ${isDark ? 'bg-[hsl(240,10%,3.9%)] text-[hsl(0,0%,98%)]' : 'bg-white text-[hsl(240,10%,3.9%)]'}`}>
       {/* ── Top bar (full width) ────────────────────────────────── */}
-      <header className={`flex h-14 shrink-0 items-center justify-between border-b ${topbarBorder} ${topbarBg} px-6`}>
+      <header className={`flex h-14 shrink-0 items-center border-b ${topbarBorder} ${topbarBg} px-6`}>
         {/* Left: Logo */}
         <Link href="/dashboard" className="flex items-center gap-2">
           <QuillIcon className="h-6 w-6 text-brand-500" />
@@ -241,6 +267,11 @@ export default function DashboardLayout({
             Lore<span className="text-brand-500">Scryver</span>
           </span>
         </Link>
+
+        {/* Center: Domain toggle (only inside project) */}
+        <div className="flex-1 flex justify-center">
+          {isInsideProject && <DomainToggle />}
+        </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1">
@@ -432,7 +463,7 @@ export default function DashboardLayout({
         </div>
       </header>
 
-      {/* ── Body: Sidebar + Content ─────────────────────────────── */}
+      {/* ── Body: Sidebar + Content ───────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — hidden when inside a project */}
         {!isInsideProject && (
@@ -472,8 +503,22 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* ── Scryve AI Assistant ─────────────────────────────────── */}
+      {/* ── Scryve AI Assistant ───────────────────────────────── */}
       <ScryvePanel />
     </div>
+  );
+}
+
+/* ── Exported Layout (wraps with provider) ─────────────────────── */
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <DomainProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </DomainProvider>
   );
 }

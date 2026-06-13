@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import { useDomain } from '@/contexts/domain-context';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -150,7 +151,6 @@ const foundationSections: Section[] = [
   { key: 'research', label: 'Research & Reference', icon: SearchIcon, description: 'Supporting material — notes, inspiration, mood boards, and source material.' },
 ];
 
-/* Delivery sections per project type */
 const deliverySections: Record<string, Section[]> = {
   novel: [
     { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — where the Story Foundation becomes a novel.' },
@@ -194,13 +194,10 @@ const deliverySections: Record<string, Section[]> = {
   ],
 };
 
-// Fallback for types not yet mapped
 const defaultDeliverySections: Section[] = [
   { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Your primary creative output for this delivery type.' },
   { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your work for review and export.' },
 ];
-
-/* ── Project type labels ────────────────────────────────────────────── */
 
 const projectTypeLabels: Record<string, string> = {
   novel: 'Novel', novella: 'Novella', short_story: 'Short Story',
@@ -224,32 +221,48 @@ interface Project {
   updatedAt: string;
 }
 
-type Domain = 'foundation' | 'delivery';
-
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const { activeDomain, setActiveDomain, setDeliveryLabel, setIsInsideProject } = useDomain();
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeDomain, setActiveDomain] = useState<Domain>('foundation');
   const [activeSection, setActiveSection] = useState('premise');
   const [activeDeliveryType, setActiveDeliveryType] = useState<string>('');
   const [deliveryDropdownOpen, setDeliveryDropdownOpen] = useState(false);
   const deliveryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Register as inside project on mount, unregister on unmount
+  useEffect(() => {
+    setIsInsideProject(true);
+    return () => setIsInsideProject(false);
+  }, [setIsInsideProject]);
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}`)
       .then((r) => r.json())
       .then((data) => {
         setProject(data);
-        setActiveDeliveryType(data.projectType || 'novel');
+        const pType = data.projectType || 'novel';
+        setActiveDeliveryType(pType);
+        setDeliveryLabel(projectTypeLabels[pType] || pType);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [projectId]);
+  }, [projectId, setDeliveryLabel]);
+
+  // Sync active section when domain switches
+  useEffect(() => {
+    if (activeDomain === 'foundation') {
+      setActiveSection('premise');
+    } else {
+      const sections = deliverySections[activeDeliveryType] || defaultDeliverySections;
+      setActiveSection(sections[0]?.key || 'manuscript');
+    }
+  }, [activeDomain, activeDeliveryType]);
 
   // Close delivery dropdown on click outside
   useEffect(() => {
@@ -298,186 +311,144 @@ export default function ProjectPage() {
   const CurrentIcon = currentSection.icon;
   const deliveryLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
 
-  function switchDomain(domain: Domain) {
-    setActiveDomain(domain);
-    if (domain === 'foundation') {
-      setActiveSection('premise');
-    } else {
-      const sections = deliverySections[activeDeliveryType] || defaultDeliverySections;
-      setActiveSection(sections[0]?.key || 'manuscript');
-    }
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      {/* ── Domain toggle bar ───────────────────────────────────── */}
-      <div className="flex h-10 shrink-0 items-center justify-center border-b border-white/5 bg-[hsl(240,6%,7%)]">
-        <div className="flex h-7 items-center rounded-lg bg-white/[0.04] border border-white/5 p-0.5">
-          <button
-            onClick={() => switchDomain('foundation')}
-            className={`h-6 rounded-md px-3.5 text-xs font-semibold transition ${
-              activeDomain === 'foundation'
-                ? 'bg-brand-600/20 text-brand-400'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+    <div className="flex h-full">
+      {/* ── Project sidebar ──────────────────────────────────────── */}
+      <aside className="flex w-56 flex-col border-r border-white/5 bg-[hsl(240,6%,7%)]">
+        {/* Back + project title */}
+        <div className="border-b border-white/5 px-3 py-3">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition"
           >
-            Story Foundation
-          </button>
-          <button
-            onClick={() => switchDomain('delivery')}
-            className={`h-6 rounded-md px-3.5 text-xs font-semibold transition ${
-              activeDomain === 'delivery'
-                ? 'bg-brand-600/20 text-brand-400'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Delivery · {deliveryLabel}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── Project sidebar ──────────────────────────────────────── */}
-        <aside className="flex w-56 flex-col border-r border-white/5 bg-[hsl(240,6%,7%)]">
-          {/* Back + project title */}
-          <div className="border-b border-white/5 px-3 py-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition"
-            >
-              <ArrowLeftIcon className="h-3.5 w-3.5" />
-              All Projects
-            </Link>
-            <div className="mt-2 px-2">
-              <h2 className="text-sm font-bold truncate" title={project.title}>
-                {project.title}
-              </h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {projectTypeLabels[project.projectType] || project.projectType}
-              </p>
-            </div>
+            <ArrowLeftIcon className="h-3.5 w-3.5" />
+            All Projects
+          </Link>
+          <div className="mt-2 px-2">
+            <h2 className="text-sm font-bold truncate" title={project.title}>
+              {project.title}
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {projectTypeLabels[project.projectType] || project.projectType}
+            </p>
           </div>
+        </div>
 
-          {/* Delivery manager (only in delivery domain) */}
-          {activeDomain === 'delivery' && (
-            <div className="border-b border-white/5 px-3 py-2" ref={deliveryDropdownRef}>
-              <div className="relative">
-                <button
-                  onClick={() => setDeliveryDropdownOpen(!deliveryDropdownOpen)}
-                  className="flex w-full items-center justify-between rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] transition"
-                >
-                  <span>{deliveryLabel}</span>
-                  <ChevronDownIcon className={`h-3.5 w-3.5 text-muted-foreground transition ${deliveryDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
+        {/* Delivery manager (only in delivery domain) */}
+        {activeDomain === 'delivery' && (
+          <div className="border-b border-white/5 px-3 py-2" ref={deliveryDropdownRef}>
+            <div className="relative">
+              <button
+                onClick={() => setDeliveryDropdownOpen(!deliveryDropdownOpen)}
+                className="flex w-full items-center justify-between rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] transition"
+              >
+                <span>{deliveryLabel}</span>
+                <ChevronDownIcon className={`h-3.5 w-3.5 text-muted-foreground transition ${deliveryDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-                {deliveryDropdownOpen && (
-                  <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-lg border border-white/10 bg-[hsl(240,6%,10%)] py-1 shadow-xl">
-                    {/* Current delivery type */}
-                    <div className="flex items-center justify-between px-2.5 py-1.5">
-                      <span className="text-xs font-medium text-brand-400">{deliveryLabel}</span>
-                      <button
-                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-white/5 hover:text-foreground transition"
-                        title="Delivery settings"
-                      >
-                        <SettingsIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-
-                    <div className="border-t border-white/5 my-1" />
-
-                    {/* Add new delivery */}
-                    <button className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition">
-                      <PlusIcon className="h-3 w-3" />
-                      Add Delivery Type
+              {deliveryDropdownOpen && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-lg border border-white/10 bg-[hsl(240,6%,10%)] py-1 shadow-xl">
+                  <div className="flex items-center justify-between px-2.5 py-1.5">
+                    <span className="text-xs font-medium text-brand-400">{deliveryLabel}</span>
+                    <button
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-white/5 hover:text-foreground transition"
+                      title="Delivery settings"
+                    >
+                      <SettingsIcon className="h-3 w-3" />
                     </button>
                   </div>
-                )}
+                  <div className="border-t border-white/5 my-1" />
+                  <button className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition">
+                    <PlusIcon className="h-3 w-3" />
+                    Add Delivery Type
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Section nav */}
+        <nav className="flex-1 space-y-0.5 px-3 py-3 overflow-y-auto">
+          {currentSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.key;
+
+            return (
+              <button
+                key={section.key}
+                onClick={() => setActiveSection(section.key)}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-brand-600/15 text-brand-400'
+                    : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {section.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Trash pinned bottom */}
+        <div className="border-t border-white/5 px-3 py-2">
+          <button
+            onClick={() => setActiveSection('trash')}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              activeSection === 'trash'
+                ? 'bg-brand-600/15 text-brand-400'
+                : 'text-muted-foreground hover:bg-white/5 hover:text-red-400'
+            }`}
+          >
+            <TrashIcon className="h-4 w-4" />
+            Trash
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main content area ────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Section header */}
+        <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600/15">
+            <CurrentIcon className="h-4 w-4 text-brand-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">{activeSection === 'trash' ? 'Trash' : currentSection.label}</h1>
+            <p className="text-xs text-muted-foreground">{project.title}</p>
+          </div>
+        </div>
+
+        {/* Section content placeholder */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          {activeSection === 'trash' ? (
+            <div className="mx-auto max-w-2xl py-16 text-center">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
+                <TrashIcon className="h-8 w-8 text-red-400" />
               </div>
+              <h2 className="text-xl font-bold">Trash</h2>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                Deleted items are kept here until permanently removed.
+              </p>
+              <p className="mt-6 text-xs text-muted-foreground/60">
+                Trash is empty.
+              </p>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-2xl py-16 text-center">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
+                <CurrentIcon className="h-8 w-8 text-brand-400" />
+              </div>
+              <h2 className="text-xl font-bold">{currentSection.label}</h2>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                {currentSection.description}
+              </p>
+              <p className="mt-6 text-xs text-muted-foreground/60">
+                This section is coming soon.
+              </p>
             </div>
           )}
-
-          {/* Section nav */}
-          <nav className="flex-1 space-y-0.5 px-3 py-3 overflow-y-auto">
-            {currentSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = activeSection === section.key;
-
-              return (
-                <button
-                  key={section.key}
-                  onClick={() => setActiveSection(section.key)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-brand-600/15 text-brand-400'
-                      : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {section.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Trash pinned bottom */}
-          <div className="border-t border-white/5 px-3 py-2">
-            <button
-              onClick={() => setActiveSection('trash')}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                activeSection === 'trash'
-                  ? 'bg-brand-600/15 text-brand-400'
-                  : 'text-muted-foreground hover:bg-white/5 hover:text-red-400'
-              }`}
-            >
-              <TrashIcon className="h-4 w-4" />
-              Trash
-            </button>
-          </div>
-        </aside>
-
-        {/* ── Main content area ────────────────────────────────────── */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Section header */}
-          <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600/15">
-              <CurrentIcon className="h-4 w-4 text-brand-400" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold">{activeSection === 'trash' ? 'Trash' : currentSection.label}</h1>
-              <p className="text-xs text-muted-foreground">{project.title}</p>
-            </div>
-          </div>
-
-          {/* Section content placeholder */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8">
-            {activeSection === 'trash' ? (
-              <div className="mx-auto max-w-2xl py-16 text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
-                  <TrashIcon className="h-8 w-8 text-red-400" />
-                </div>
-                <h2 className="text-xl font-bold">Trash</h2>
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                  Deleted items are kept here until permanently removed.
-                </p>
-                <p className="mt-6 text-xs text-muted-foreground/60">
-                  Trash is empty.
-                </p>
-              </div>
-            ) : (
-              <div className="mx-auto max-w-2xl py-16 text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
-                  <CurrentIcon className="h-8 w-8 text-brand-400" />
-                </div>
-                <h2 className="text-xl font-bold">{currentSection.label}</h2>
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                  {currentSection.description}
-                </p>
-                <p className="mt-6 text-xs text-muted-foreground/60">
-                  This section is coming soon.
-                </p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
