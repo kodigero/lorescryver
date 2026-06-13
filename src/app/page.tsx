@@ -255,13 +255,13 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/auth/login"
+              href="/login"
               className="text-sm text-muted-foreground transition hover:text-foreground"
             >
               Sign in
             </Link>
             <Link
-              href="/auth/register"
+              href="/register"
               className="inline-flex h-9 items-center rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition hover:bg-brand-700"
             >
               Get Started
@@ -286,7 +286,7 @@ export default function LandingPage() {
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
             The all-in-one command center for storytellers. Write and manage
             narrative for books, games, animation, film, and any medium with a
-            story — with Scryve, your virtual scribe.
+            story &mdash; with Scryve, your virtual scribe.
           </p>
 
           {/* Media type pills */}
@@ -303,10 +303,10 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/auth/register"
+              href="/register"
               className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
             >
-              Start Creating — It&apos;s Free
+              Start Creating &mdash; It&apos;s Free
               <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
             <a
@@ -318,7 +318,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Editor mockup placeholder */}
+        {/* Editor mockup */}
         <div className="relative mx-auto mt-20 max-w-5xl">
           <div className="gradient-border glow overflow-hidden rounded-2xl">
             <div className="rounded-2xl bg-[hsl(240,6%,7%)] p-1">
@@ -330,7 +330,7 @@ export default function LandingPage() {
                   <div className="h-3 w-3 rounded-full bg-green-500/70" />
                 </div>
                 <span className="ml-4 text-xs text-muted-foreground">
-                  Chapter 7 — The Crimson Gate
+                  Chapter 7 &mdash; The Crimson Gate
                 </span>
               </div>
               {/* Editor body */}
@@ -365,7 +365,7 @@ export default function LandingPage() {
                   </p>
                   <p className="mt-4 font-serif text-lg leading-relaxed text-foreground/90">
                     &ldquo;You shouldn&apos;t be here,&rdquo; the voice echoed
-                    from everywhere and nowhere at once. She recognized it — the
+                    from everywhere and nowhere at once. She recognized it &mdash; the
                     same voice from the prophecy scrolls.
                   </p>
                   <p className="mt-4 font-serif text-lg leading-relaxed text-foreground/60">
@@ -459,7 +459,7 @@ export default function LandingPage() {
               Everything you need to <span className="gradient-text">create</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Purpose-built tools for storytellers — not generic docs with a writing skin.
+              Purpose-built tools for storytellers &mdash; not generic docs with a writing skin.
             </p>
           </div>
 
@@ -531,7 +531,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/auth/register"
+                  href="/register"
                   className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition ${
                     plan.featured
                       ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/25 hover:bg-brand-700'
@@ -554,12 +554,12 @@ export default function LandingPage() {
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
             Join thousands of storytellers who&apos;ve found their home.
-            Whether it&apos;s a novel, a game, or a screenplay — if it has a
+            Whether it&apos;s a novel, a game, or a screenplay &mdash; if it has a
             story, LoreScryver can write it.
           </p>
           <div className="mt-10">
             <Link
-              href="/auth/register"
+              href="/register"
               className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
             >
               Get Started Free
