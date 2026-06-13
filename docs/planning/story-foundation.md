@@ -82,6 +82,8 @@ Supporting material that informs the story.
 - Inspiration images / mood boards
 - Source material
 
+> **Note:** The components listed above are initial suggestions. Final components will be defined by the author during implementation in Cowork.
+
 ---
 
 ## Delivery Layer (Novel Adapter)
@@ -97,8 +99,16 @@ Other delivery adapters (Screenplay, Comic, etc.) will follow the same pattern �
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-- How deep should the Story Foundation be before the user can enter the delivery phase?
-- Should delivery adapters be switchable mid-project (e.g., adapt a novel into a screenplay)?
-- What is the minimum viable Story Foundation for launch?
+### How deep should the Story Foundation be before the user can enter the delivery phase?
+
+**TBD** — To be defined in detail during a Cowork session. The author has a specific vision for the required depth and information needed from the user.
+
+### Should delivery adapters be switchable mid-project?
+
+**Yes.** Any existing project can be adopted into a new delivery type. A single Story Foundation can have multiple delivery outputs simultaneously. For example, an ongoing novel project can also be adapted for a game or a YouTube animation series.
+
+### What is the minimum viable Story Foundation for launch?
+
+**TBD** — The author will define custom components. The six components listed above are initial suggestions and may be revised.
