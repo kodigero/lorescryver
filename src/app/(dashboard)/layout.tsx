@@ -169,6 +169,9 @@ export default function DashboardLayout({
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  // Hide the outer sidebar when inside a project workspace
+  const isInsideProject = pathname.startsWith('/dashboard/project/');
+
   // Focus search input when opened
   useEffect(() => {
     if (searchOpen && searchInputRef.current) {
@@ -430,33 +433,35 @@ export default function DashboardLayout({
 
       {/* ── Body: Sidebar + Content ─────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className={`hidden w-60 flex-col border-r ${sidebarBorder} ${sidebarBg} md:flex`}>
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                item.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname.startsWith(item.href);
+        {/* Sidebar — hidden when inside a project */}
+        {!isInsideProject && (
+          <aside className={`hidden w-60 flex-col border-r ${sidebarBorder} ${sidebarBg} md:flex`}>
+            <nav className="flex-1 space-y-1 px-3 py-4">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === '/dashboard'
+                    ? pathname === '/dashboard'
+                    : pathname.startsWith(item.href);
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-brand-600/15 text-brand-400'
-                      : `text-muted-foreground ${hoverBg} hover:text-foreground`
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-brand-600/15 text-brand-400'
+                        : `text-muted-foreground ${hoverBg} hover:text-foreground`
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        )}
 
         {/* Main content */}
         <main className={`flex flex-1 flex-col overflow-hidden ${isDark ? '' : 'bg-gray-50/50'}`}>

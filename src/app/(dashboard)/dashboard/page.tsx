@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -163,7 +164,6 @@ function CreateProjectModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onMouseDown={(e) => {
-        // Close when clicking on the backdrop (outside the modal card)
         if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
           onClose();
         }
@@ -236,6 +236,7 @@ function CreateProjectModal({
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -254,11 +255,10 @@ export default function DashboardPage() {
       .catch(() => setLoaded(true));
   });
 
-  // Close context menu and editing when clicking outside
+  // Close context menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      // Close context menu if clicking outside of it
       if (menuOpen) {
         const menuEl = document.querySelector('[data-context-menu]');
         const triggerEl = document.querySelector(`[data-menu-trigger="${menuOpen}"]`);
@@ -340,7 +340,6 @@ export default function DashboardPage() {
       {/* Content */}
       <div className="p-6 md:p-8">
         {!loaded ? (
-          /* Loading skeleton */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <div
@@ -350,7 +349,6 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : projects.length === 0 ? (
-          /* Empty state */
           <div className="mx-auto max-w-md py-24 text-center">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/15">
               <QuillIcon className="h-8 w-8 text-brand-400" />
@@ -369,14 +367,18 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          /* Project grid */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="group relative rounded-2xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-brand-500/20 hover:bg-white/[0.04]"
+                className="group relative rounded-2xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-brand-500/20 hover:bg-white/[0.04] cursor-pointer"
+                onClick={(e) => {
+                  // Don't navigate if clicking on menu, edit input, or buttons
+                  const target = e.target as HTMLElement;
+                  if (target.closest('[data-menu-trigger]') || target.closest('[data-context-menu]') || target.closest('input') || target.closest('button')) return;
+                  router.push(`/dashboard/project/${project.id}`);
+                }}
               >
-                {/* Title or edit input */}
                 {editingId === project.id ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -400,7 +402,6 @@ export default function DashboardPage() {
                   <h3 className="text-base font-bold pr-8">{project.title}</h3>
                 )}
 
-                {/* Project type + status */}
                 <div className="mt-2 flex items-center gap-2">
                   {project.projectType && (
                     <span className="text-xs text-muted-foreground">
@@ -411,17 +412,14 @@ export default function DashboardPage() {
                   <StatusBadge status={project.status} />
                 </div>
 
-                {/* Word count goal */}
                 <div className="mt-3 text-xs text-muted-foreground">
                   Goal: {project.wordCountGoal.toLocaleString()} words
                 </div>
 
-                {/* Updated at */}
                 <div className="mt-1 text-xs text-muted-foreground">
                   Updated {new Date(project.updatedAt).toLocaleDateString()}
                 </div>
 
-                {/* Actions menu */}
                 <div className="absolute right-4 top-4">
                   <button
                     data-menu-trigger={project.id}
@@ -460,7 +458,10 @@ export default function DashboardPage() {
       <CreateProjectModal
         open={showCreate}
         onClose={() => setShowCreate(false)}
-        onCreated={(project) => setProjects((prev) => [project, ...prev])}
+        onCreated={(project) => {
+          // Navigate to the new project workspace
+          router.push(`/dashboard/project/${project.id}`);
+        }}
       />
     </>
   );
