@@ -14,13 +14,13 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: 'LoreScryver — Fiction Authoring Platform',
+  title: 'LoreScryver — Narrative Authoring Platform',
   description:
-    'The all-in-one platform for fiction writers. From first spark to published book — worldbuilding, drafting, editing, formatting, and publishing in one place.',
+    'The all-in-one platform for storytellers. Write and manage narrative for books, games, animation, video, and any medium with a story — from first spark to finished product.',
   openGraph: {
-    title: 'LoreScryver — Fiction Authoring Platform',
+    title: 'LoreScryver — Narrative Authoring Platform',
     description:
-      'From first spark to published book. The complete authoring command center for fiction writers.',
+      'From first spark to finished story. The complete authoring command center for books, games, animation, video, and beyond.',
     url: 'https://lorescryver.com',
     siteName: 'LoreScryver',
     type: 'website',
