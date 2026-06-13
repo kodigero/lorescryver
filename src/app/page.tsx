@@ -98,17 +98,28 @@ function ArrowRightIcon({ className }: { className?: string }) {
 
 /* ── Data ────────────────────────────────────────────────────────────── */
 
+const mediaTypes = [
+  'Novels & Books',
+  'Video Games',
+  'Animation & Anime',
+  'Film & TV',
+  'Tabletop RPGs',
+  'Comics & Manga',
+  'Audio Dramas',
+  'Interactive Fiction',
+];
+
 const pipeline = [
   {
     step: '01',
     title: 'Ideate & Worldbuild',
-    description: 'Brainstorm plots, map magic systems, build character arcs, and organize your story bible — all with AI-assisted prompts.',
+    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you’re writing a novel, a game script, or a screenplay.',
     icon: SparklesIcon,
   },
   {
     step: '02',
     title: 'Draft',
-    description: 'Write in a distraction-free rich editor with inline AI suggestions, automatic chapter management, and real-time word tracking.',
+    description: 'Write in a distraction-free rich editor with inline AI suggestions, automatic chapter and scene management, and real-time word tracking.',
     icon: PenIcon,
   },
   {
@@ -120,13 +131,13 @@ const pipeline = [
   {
     step: '04',
     title: 'Compile & Format',
-    description: 'Export to ePub, PDF, or DOCX with professional interior layouts, automatic front/back matter, and custom style presets.',
+    description: 'Export to ePub, PDF, DOCX, screenplay format, or custom templates with professional layouts and style presets.',
     icon: LayersIcon,
   },
   {
     step: '05',
-    title: 'Publish & Monetize',
-    description: 'Distribute to Amazon KDP, Apple Books, and more. Track royalties, manage series, and grow your readership.',
+    title: 'Publish & Distribute',
+    description: 'Distribute to storefronts, share with collaborators, track versions, and manage your narrative portfolio across projects.',
     icon: RocketIcon,
   },
 ];
@@ -134,7 +145,7 @@ const pipeline = [
 const features = [
   {
     title: 'Story Bible',
-    description: 'A living wiki for your world — characters, locations, timelines, and lore, all cross-linked and searchable.',
+    description: 'A living wiki for your world — characters, locations, timelines, and lore, all cross-linked and searchable across every project.',
     icon: BookIcon,
   },
   {
@@ -144,22 +155,22 @@ const features = [
   },
   {
     title: 'Rich Text Editor',
-    description: 'A beautiful, responsive writing surface built for long-form fiction. Markdown shortcuts, focus mode, and chapter navigation.',
+    description: 'A beautiful, responsive writing surface built for long-form narrative. Markdown shortcuts, focus mode, and chapter navigation.',
     icon: PenIcon,
   },
   {
     title: 'Multi-Format Export',
-    description: 'One-click compilation to ePub, Kindle, PDF, and DOCX with professional typesetting and layout control.',
+    description: 'One-click compilation to ePub, Kindle, PDF, DOCX, screenplay, and custom formats with professional typesetting.',
     icon: LayersIcon,
   },
   {
-    title: 'Series Management',
-    description: 'Manage multi-book series with shared bibles, cross-book continuity checks, and series-level metadata.',
+    title: 'Universe Management',
+    description: 'Manage shared universes across projects — cross-project continuity checks, shared bibles, and universe-level metadata.',
     icon: GlobeIcon,
   },
   {
-    title: 'Publishing Dashboard',
-    description: 'Track sales, manage distribution, view royalty reports, and plan marketing campaigns — all from one screen.',
+    title: 'Project Dashboard',
+    description: 'Track progress, manage versions, view analytics, and coordinate across all your narrative projects from one screen.',
     icon: RocketIcon,
   },
 ];
@@ -169,7 +180,7 @@ const plans = [
     name: 'Scribe',
     price: 'Free',
     period: '',
-    description: 'For writers just getting started.',
+    description: 'For storytellers just getting started.',
     features: [
       '1 active project',
       'Basic rich text editor',
@@ -184,14 +195,14 @@ const plans = [
     name: 'Storyteller',
     price: '$12',
     period: '/mo',
-    description: 'For serious authors building worlds.',
+    description: 'For serious creators building worlds.',
     features: [
       'Unlimited projects',
       'Full rich text editor',
       'Unlimited story bible',
       'Scryve (50k words/mo)',
-      'Export to ePub, PDF, DOCX',
-      'Series management',
+      'All export formats',
+      'Universe management',
       'Priority support',
     ],
     cta: 'Start Free Trial',
@@ -201,13 +212,13 @@ const plans = [
     name: 'Worldsmith',
     price: '$29',
     period: '/mo',
-    description: 'For prolific authors and publishers.',
+    description: 'For prolific creators and studios.',
     features: [
       'Everything in Storyteller',
       'Scryve (unlimited)',
       'Advanced analytics',
-      'Publishing dashboard',
-      'Multi-format compilation',
+      'Project dashboard',
+      'Custom export templates',
       'Custom style presets',
       'Team collaboration',
       'Dedicated support',
@@ -264,26 +275,38 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-4 py-1.5 text-sm text-brand-300">
             <SparklesIcon className="h-4 w-4" />
-            AI-Powered Fiction Authoring Platform
+            AI-Powered Narrative Authoring Platform
           </div>
 
           <h1 className="font-serif text-5xl font-black leading-[1.1] tracking-tight md:text-6xl lg:text-7xl">
-            From first spark to{' '}
-            <span className="gradient-text">published book</span>
+            If it has a story,{' '}
+            <span className="gradient-text">LoreScryver writes it</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-            The all-in-one command center for fiction writers. Worldbuild, draft,
-            edit, format, and publish — with Scryve, your virtual scribe that
-            knows your story as deeply as you do.
+            The all-in-one command center for storytellers. Write and manage
+            narrative for books, games, animation, film, and any medium with a
+            story — with Scryve, your virtual scribe.
           </p>
+
+          {/* Media type pills */}
+          <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+            {mediaTypes.map((media) => (
+              <span
+                key={media}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-muted-foreground"
+              >
+                {media}
+              </span>
+            ))}
+          </div>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/auth/register"
               className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
             >
-              Start Writing — It&apos;s Free
+              Start Creating — It&apos;s Free
               <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
             <a
@@ -394,8 +417,8 @@ export default function LandingPage() {
               Your complete authoring <span className="gradient-text">pipeline</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Five phases. One workspace. Every tool a fiction writer needs, from
-              the first spark of an idea to royalties in your account.
+              Five phases. One workspace. Every tool a storyteller needs, from
+              the first spark of an idea to a finished, polished narrative.
             </p>
           </div>
 
@@ -436,7 +459,7 @@ export default function LandingPage() {
               Everything you need to <span className="gradient-text">create</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Purpose-built tools for fiction writers — not generic docs with a writing skin.
+              Purpose-built tools for storytellers — not generic docs with a writing skin.
             </p>
           </div>
 
@@ -467,7 +490,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-serif text-3xl font-bold tracking-tight md:text-4xl">
-              Simple, writer-friendly <span className="gradient-text">pricing</span>
+              Simple, creator-friendly <span className="gradient-text">pricing</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               Start free. Upgrade when your story demands it.
@@ -527,11 +550,12 @@ export default function LandingPage() {
       <section className="relative z-10 border-t border-white/5 py-24">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h2 className="font-serif text-3xl font-bold tracking-tight md:text-4xl">
-            Ready to write your masterpiece?
+            Ready to bring your story to life?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Join thousands of fiction writers who&apos;ve found their home.
-            Your story deserves a platform built for it.
+            Join thousands of storytellers who&apos;ve found their home.
+            Whether it&apos;s a novel, a game, or a screenplay — if it has a
+            story, LoreScryver can write it.
           </p>
           <div className="mt-10">
             <Link
