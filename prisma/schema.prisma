@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth ---
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  avatarUrl     String?
+  plan          Plan      @default(FREE)
+  projects      Project[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+// --- Projects ---
+
+model Project {
+  id            String    @id @default(cuid())
+  title         String
+  genre         String    @default("")
+  status        String    @default("ideation")
+  wordCountGoal Int       @default(80000)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapters      Chapter[]
+  bibleEntries  BibleEntry[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// --- Chapters ---
+
+model Chapter {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int
+  content   Json     @default("{}")
+  wordCount Int      @default(0)
+  status    String   @default("outline")
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@unique([projectId, order])
+}
+
+// --- Series Bible ---
+
+model BibleEntry {
+  id          String   @id @default(cuid())
+  type        String
+  name        String
+  description String   @default("")
+  properties  Json     @default("{}")
+  tags        String[] @default([])
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, type])
+}
