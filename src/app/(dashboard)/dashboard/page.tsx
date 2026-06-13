@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -133,6 +133,7 @@ function CreateProjectModal({
   const [title, setTitle] = useState('');
   const [projectType, setProjectType] = useState('novel');
   const [loading, setLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   if (!open) return null;
 
@@ -159,8 +160,16 @@ function CreateProjectModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[hsl(240,6%,10%)] p-6 shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        // Close when clicking on the backdrop (outside the modal card)
+        if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+          onClose();
+        }
+      }}
+    >
+      <div ref={modalRef} className="w-full max-w-md rounded-2xl border border-white/10 bg-[hsl(240,6%,10%)] p-6 shadow-2xl">
         <h2 className="text-lg font-bold">Create New Project</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Give your story a name and choose its medium.
@@ -244,6 +253,39 @@ export default function DashboardPage() {
       })
       .catch(() => setLoaded(true));
   });
+
+  // Close context menu and editing when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      // Close context menu if clicking outside of it
+      if (menuOpen) {
+        const menuEl = document.querySelector('[data-context-menu]');
+        const triggerEl = document.querySelector(`[data-menu-trigger="${menuOpen}"]`);
+        if (
+          menuEl && !menuEl.contains(target) &&
+          triggerEl && !triggerEl.contains(target)
+        ) {
+          setMenuOpen(null);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  // Close menus on Escape
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMenuOpen(null);
+        setEditingId(null);
+        setShowCreate(false);
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this project? This cannot be undone.')) return;
@@ -382,6 +424,7 @@ export default function DashboardPage() {
                 {/* Actions menu */}
                 <div className="absolute right-4 top-4">
                   <button
+                    data-menu-trigger={project.id}
                     onClick={() => setMenuOpen(menuOpen === project.id ? null : project.id)}
                     className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-white/10 group-hover:opacity-100"
                   >
@@ -389,7 +432,7 @@ export default function DashboardPage() {
                   </button>
 
                   {menuOpen === project.id && (
-                    <div className="absolute right-0 top-8 z-10 w-36 rounded-lg border border-white/10 bg-[hsl(240,6%,10%)] py-1 shadow-xl">
+                    <div data-context-menu className="absolute right-0 top-8 z-10 w-36 rounded-lg border border-white/10 bg-[hsl(240,6%,10%)] py-1 shadow-xl">
                       <button
                         onClick={() => startEdit(project)}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
