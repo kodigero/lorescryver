@@ -39,20 +39,20 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { title, genre, status, wordCountGoal } = body;
+  const { title, projectType, status, wordCountGoal } = body;
 
   const project = await prisma.project.update({
     where: { id },
     data: {
       ...(title !== undefined && { title: title.trim() }),
-      ...(genre !== undefined && { genre: genre.trim() }),
+      ...(projectType !== undefined && { projectType }),
       ...(status !== undefined && { status }),
       ...(wordCountGoal !== undefined && { wordCountGoal }),
     },
     select: {
       id: true,
       title: true,
-      genre: true,
+      projectType: true,
       status: true,
       wordCountGoal: true,
       updatedAt: true,

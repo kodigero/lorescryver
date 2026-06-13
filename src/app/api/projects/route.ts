@@ -12,7 +12,7 @@ export async function GET() {
     select: {
       id: true,
       title: true,
-      genre: true,
+      projectType: true,
       status: true,
       wordCountGoal: true,
       updatedAt: true,
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const user = await getTestUser();
   const body = await request.json();
 
-  const { title, genre, wordCountGoal } = body;
+  const { title, projectType, wordCountGoal } = body;
 
   if (!title || typeof title !== 'string') {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -36,14 +36,14 @@ export async function POST(request: Request) {
   const project = await prisma.project.create({
     data: {
       title: title.trim(),
-      genre: genre?.trim() || '',
+      projectType: projectType || 'novel',
       wordCountGoal: wordCountGoal || 80000,
       userId: user.id,
     },
     select: {
       id: true,
       title: true,
-      genre: true,
+      projectType: true,
       status: true,
       wordCountGoal: true,
       updatedAt: true,

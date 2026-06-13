@@ -32,7 +32,7 @@ enum Plan {
 model Project {
   id            String    @id @default(cuid())
   title         String
-  genre         String    @default("")
+  projectType   String    @default("novel")
   status        String    @default("ideation")
   wordCountGoal Int       @default(80000)
   userId        String

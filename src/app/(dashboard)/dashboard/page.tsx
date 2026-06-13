@@ -53,6 +53,42 @@ function PenIcon({ className }: { className?: string }) {
   );
 }
 
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/* ── Project type options ───────────────────────────────────────────── */
+
+const projectTypes = [
+  { value: 'novel', label: 'Novel' },
+  { value: 'novella', label: 'Novella' },
+  { value: 'short_story', label: 'Short Story' },
+  { value: 'screenplay', label: 'Screenplay' },
+  { value: 'tv_series', label: 'TV Series' },
+  { value: 'web_series', label: 'Web Series' },
+  { value: 'stage_play', label: 'Stage Play' },
+  { value: 'musical', label: 'Musical' },
+  { value: 'video_game', label: 'Video Game' },
+  { value: 'visual_novel', label: 'Visual Novel' },
+  { value: 'animation', label: 'Animation' },
+  { value: 'comic', label: 'Comic / Graphic Novel' },
+  { value: 'manga', label: 'Manga / Webtoon' },
+  { value: 'podcast', label: 'Podcast / Audio Drama' },
+  { value: 'tabletop_rpg', label: 'Tabletop RPG' },
+  { value: 'interactive_fiction', label: 'Interactive Fiction' },
+  { value: 'poetry', label: 'Poetry Collection' },
+  { value: 'nonfiction', label: 'Narrative Non-Fiction' },
+  { value: 'other', label: 'Other' },
+];
+
+const projectTypeLabels: Record<string, string> = Object.fromEntries(
+  projectTypes.map((t) => [t.value, t.label])
+);
+
 /* ── Status badge ───────────────────────────────────────────────────── */
 
 const statusColors: Record<string, string> = {
@@ -77,7 +113,7 @@ function StatusBadge({ status }: { status: string }) {
 interface Project {
   id: string;
   title: string;
-  genre: string;
+  projectType: string;
   status: string;
   wordCountGoal: number;
   updatedAt: string;
@@ -95,7 +131,7 @@ function CreateProjectModal({
   onCreated: (project: Project) => void;
 }) {
   const [title, setTitle] = useState('');
-  const [genre, setGenre] = useState('');
+  const [projectType, setProjectType] = useState('novel');
   const [loading, setLoading] = useState(false);
 
   if (!open) return null;
@@ -108,13 +144,13 @@ function CreateProjectModal({
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), genre: genre.trim() }),
+        body: JSON.stringify({ title: title.trim(), projectType }),
       });
       if (res.ok) {
         const project = await res.json();
         onCreated(project);
         setTitle('');
-        setGenre('');
+        setProjectType('novel');
         onClose();
       }
     } finally {
@@ -127,7 +163,7 @@ function CreateProjectModal({
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[hsl(240,6%,10%)] p-6 shadow-2xl">
         <h2 className="text-lg font-bold">Create New Project</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Give your story a name to get started.
+          Give your story a name and choose its medium.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -146,17 +182,24 @@ function CreateProjectModal({
             />
           </div>
           <div>
-            <label htmlFor="project-genre" className="mb-1.5 block text-sm font-medium">
-              Genre <span className="text-muted-foreground">(optional)</span>
+            <label htmlFor="project-type" className="mb-1.5 block text-sm font-medium">
+              Project Type
             </label>
-            <input
-              id="project-genre"
-              type="text"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              placeholder="e.g. Fantasy, Sci-Fi, Horror"
-              className="flex h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
+            <div className="relative">
+              <select
+                id="project-type"
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value)}
+                className="flex h-10 w-full appearance-none rounded-lg border border-white/10 bg-white/5 px-3 pr-9 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              >
+                {projectTypes.map((type) => (
+                  <option key={type.value} value={type.value} className="bg-[hsl(240,6%,10%)] text-white">
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -315,12 +358,14 @@ export default function DashboardPage() {
                   <h3 className="text-base font-bold pr-8">{project.title}</h3>
                 )}
 
-                {/* Genre + status */}
+                {/* Project type + status */}
                 <div className="mt-2 flex items-center gap-2">
-                  {project.genre && (
-                    <span className="text-xs text-muted-foreground">{project.genre}</span>
+                  {project.projectType && (
+                    <span className="text-xs text-muted-foreground">
+                      {projectTypeLabels[project.projectType] || project.projectType}
+                    </span>
                   )}
-                  {project.genre && <span className="text-white/20">·</span>}
+                  {project.projectType && <span className="text-white/20">·</span>}
                   <StatusBadge status={project.status} />
                 </div>
 
