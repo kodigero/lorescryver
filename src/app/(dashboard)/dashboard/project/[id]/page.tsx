@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useDomain } from '@/contexts/domain-context';
+import SummarySection from '@/components/sections/summary-section';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -296,6 +297,46 @@ export default function ProjectPage() {
   const CurrentIcon = currentSection.icon;
   const creationLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
 
+  /* ── Render section content ──────────────────────────────────────── */
+  function renderSectionContent() {
+    if (activeSection === 'trash') {
+      return (
+        <div className="mx-auto max-w-2xl py-16 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
+            <TrashIcon className="h-8 w-8 text-red-400" />
+          </div>
+          <h2 className="text-xl font-bold">Trash</h2>
+          <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+            Deleted items are kept here until permanently removed.
+          </p>
+          <p className="mt-6 text-xs text-muted-foreground/60">
+            Trash is empty.
+          </p>
+        </div>
+      );
+    }
+
+    if (activeSection === 'summary') {
+      return <SummarySection projectId={projectId} />;
+    }
+
+    // Default placeholder for sections not yet built
+    return (
+      <div className="mx-auto max-w-2xl py-16 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
+          <CurrentIcon className="h-8 w-8 text-brand-400" />
+        </div>
+        <h2 className="text-xl font-bold">{currentSection.label}</h2>
+        <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+          {currentSection.description}
+        </p>
+        <p className="mt-6 text-xs text-muted-foreground/60">
+          This section is coming soon.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full">
       {/* ── Project sidebar ──────────────────────────────────────── */}
@@ -405,35 +446,9 @@ export default function ProjectPage() {
           </div>
         </div>
 
-        {/* Section content placeholder */}
+        {/* Section content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {activeSection === 'trash' ? (
-            <div className="mx-auto max-w-2xl py-16 text-center">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
-                <TrashIcon className="h-8 w-8 text-red-400" />
-              </div>
-              <h2 className="text-xl font-bold">Trash</h2>
-              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                Deleted items are kept here until permanently removed.
-              </p>
-              <p className="mt-6 text-xs text-muted-foreground/60">
-                Trash is empty.
-              </p>
-            </div>
-          ) : (
-            <div className="mx-auto max-w-2xl py-16 text-center">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
-                <CurrentIcon className="h-8 w-8 text-brand-400" />
-              </div>
-              <h2 className="text-xl font-bold">{currentSection.label}</h2>
-              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-                {currentSection.description}
-              </p>
-              <p className="mt-6 text-xs text-muted-foreground/60">
-                This section is coming soon.
-              </p>
-            </div>
-          )}
+          {renderSectionContent()}
         </div>
       </div>
     </div>

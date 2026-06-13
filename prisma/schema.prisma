@@ -30,19 +30,35 @@ enum Plan {
 // --- Projects ---
 
 model Project {
-  id            String    @id @default(cuid())
+  id            String           @id @default(cuid())
   title         String
-  projectType   String    @default("novel")
-  status        String    @default("ideation")
-  wordCountGoal Int       @default(80000)
+  projectType   String           @default("novel")
+  status        String           @default("ideation")
+  wordCountGoal Int              @default(80000)
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   chapters      Chapter[]
   bibleEntries  BibleEntry[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  sections      ProjectSection[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([userId])
+}
+
+// --- Project Sections (Lore Codex + Creation content) ---
+
+model ProjectSection {
+  id        String   @id @default(cuid())
+  projectId String
+  key       String
+  content   String   @default("") @db.Text
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId])
 }
 
 // --- Chapters ---
