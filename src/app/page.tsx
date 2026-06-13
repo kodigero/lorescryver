@@ -138,8 +138,8 @@ const features = [
     icon: BookIcon,
   },
   {
-    title: 'AI Co-Pilot',
-    description: 'Context-aware AI that knows your world. Get suggestions that respect your canon, tone, and style.',
+    title: 'Scryve',
+    description: 'Your virtual scribe. Context-aware AI that knows your world — offering suggestions that respect your canon, tone, and style.',
     icon: SparklesIcon,
   },
   {
@@ -189,7 +189,7 @@ const plans = [
       'Unlimited projects',
       'Full rich text editor',
       'Unlimited story bible',
-      'AI Co-Pilot (50k words/mo)',
+      'Scryve (50k words/mo)',
       'Export to ePub, PDF, DOCX',
       'Series management',
       'Priority support',
@@ -204,7 +204,7 @@ const plans = [
     description: 'For prolific authors and publishers.',
     features: [
       'Everything in Storyteller',
-      'AI Co-Pilot (unlimited)',
+      'Scryve (unlimited)',
       'Advanced analytics',
       'Publishing dashboard',
       'Multi-format compilation',
@@ -274,8 +274,8 @@ export default function LandingPage() {
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
             The all-in-one command center for fiction writers. Worldbuild, draft,
-            edit, format, and publish — with an AI co-pilot that knows your story
-            as deeply as you do.
+            edit, format, and publish — with Scryve, your virtual scribe that
+            knows your story as deeply as you do.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
