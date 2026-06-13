@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -60,6 +61,44 @@ function LogOutIcon({ className }: { className?: string }) {
   );
 }
 
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+function BellIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+
+function SunIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" /><path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" /><path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  );
+}
+
 /* ── Navigation items ───────────────────────────────────────────────── */
 
 const navItems = [
@@ -76,81 +115,120 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [isDark]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* ── Sidebar ─────────────────────────────────────────────── */}
-      <aside className="hidden w-64 flex-col border-r border-white/5 bg-[hsl(240,6%,7%)] md:flex">
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-2 border-b border-white/5 px-6">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      {/* ── Top bar (full width) ────────────────────────────────── */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/5 bg-[hsl(240,6%,7%)] px-6">
+        {/* Left: Logo */}
+        <Link href="/dashboard" className="flex items-center gap-2">
           <QuillIcon className="h-6 w-6 text-brand-500" />
           <span className="text-lg font-bold tracking-tight">
             Lore<span className="text-brand-500">Scryver</span>
           </span>
-        </div>
+        </Link>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === '/dashboard'
-                ? pathname === '/dashboard'
-                : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-brand-600/15 text-brand-400'
-                    : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User area */}
-        <div className="border-t border-white/5 p-3">
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600/20 text-brand-400">
-              <UserIcon className="h-4 w-4" />
-            </div>
-            <div className="flex-1 truncate">
-              <div className="truncate text-sm font-medium">Test User</div>
-              <div className="truncate text-xs text-muted-foreground">test@lorescryver.com</div>
-            </div>
-          </div>
-          <Link
-            href="/"
-            className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+            title="Search"
           >
-            <LogOutIcon className="h-4 w-4" />
-            Sign out
-          </Link>
-        </div>
-      </aside>
+            <SearchIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+            title="Notifications"
+          >
+            <BellIcon className="h-4 w-4" />
+            {/* Notification dot */}
+            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-brand-500" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsDark(!isDark)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+          </button>
 
-      {/* ── Main content ────────────────────────────────────────── */}
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile header */}
-        <div className="flex h-16 items-center gap-3 border-b border-white/5 px-6 md:hidden">
-          <QuillIcon className="h-6 w-6 text-brand-500" />
-          <span className="text-lg font-bold tracking-tight">
-            Lore<span className="text-brand-500">Scryver</span>
-          </span>
+          {/* User avatar */}
+          <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600/20 text-brand-400">
+            <UserIcon className="h-4 w-4" />
+          </div>
         </div>
+      </header>
 
-        {/* Page content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
-      </main>
+      {/* ── Body: Sidebar + Content ─────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="hidden w-60 flex-col border-r border-white/5 bg-[hsl(240,6%,7%)] md:flex">
+          <nav className="flex-1 space-y-1 px-3 py-4">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname.startsWith(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-brand-600/15 text-brand-400'
+                      : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User area */}
+          <div className="border-t border-white/5 p-3">
+            <div className="flex items-center gap-3 rounded-lg px-3 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600/20 text-brand-400">
+                <UserIcon className="h-4 w-4" />
+              </div>
+              <div className="flex-1 truncate">
+                <div className="truncate text-sm font-medium">Test User</div>
+                <div className="truncate text-xs text-muted-foreground">test@lorescryver.com</div>
+              </div>
+            </div>
+            <Link
+              href="/"
+              className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground"
+            >
+              <LogOutIcon className="h-4 w-4" />
+              Sign out
+            </Link>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
