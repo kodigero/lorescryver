@@ -16,55 +16,50 @@ function ArrowLeftIcon({ className }: { className?: string }) {
   );
 }
 
-function SparklesIcon({ className }: { className?: string }) {
+function LayoutDashboardIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+      <rect width="7" height="9" x="3" y="3" rx="1" />
+      <rect width="7" height="5" x="14" y="3" rx="1" />
+      <rect width="7" height="9" x="14" y="12" rx="1" />
+      <rect width="7" height="5" x="3" y="16" rx="1" />
     </svg>
   );
 }
 
-function UsersIcon({ className }: { className?: string }) {
+function MapIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z" />
+      <path d="M15 5.764v15" />
+      <path d="M9 3.236v15" />
     </svg>
   );
 }
 
-function GlobeIcon({ className }: { className?: string }) {
+function BookOpenIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-      <path d="M2 12h20" />
+      <path d="M12 7v14" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
     </svg>
   );
 }
 
-function NetworkIcon({ className }: { className?: string }) {
+function LayersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="16" y="16" width="6" height="6" rx="1" />
-      <rect x="2" y="16" width="6" height="6" rx="1" />
-      <rect x="9" y="2" width="6" height="6" rx="1" />
-      <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" />
-      <path d="M12 12V8" />
+      <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
+      <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
+      <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
     </svg>
   );
 }
 
-function PaletteIcon({ className }: { className?: string }) {
+function BookmarkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
-      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
-      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
-      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
-      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
     </svg>
   );
 }
@@ -83,16 +78,6 @@ function PenLineIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
-function LayersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
-      <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
-      <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
     </svg>
   );
 }
@@ -143,60 +128,60 @@ interface Section {
 }
 
 const foundationSections: Section[] = [
-  { key: 'premise', label: 'Premise & Concept', icon: SparklesIcon, description: 'The seed of your story — logline, theme, genre, tone, and the central dramatic question.' },
-  { key: 'characters', label: 'Characters', icon: UsersIcon, description: 'Universal character profiles — roles, motivations, arcs, relationships, and backstories.' },
-  { key: 'world', label: 'World', icon: GlobeIcon, description: 'Your setting layer — locations, rules, history, factions, and the systems that govern your universe.' },
-  { key: 'plot', label: 'Plot Structure', icon: NetworkIcon, description: 'The narrative backbone — acts, turning points, subplots, and story beats in abstract form.' },
-  { key: 'themes', label: 'Themes & Motifs', icon: PaletteIcon, description: 'Recurring ideas, symbols, and the thematic argument your story is making.' },
-  { key: 'research', label: 'Research & Reference', icon: SearchIcon, description: 'Supporting material — notes, inspiration, mood boards, and source material.' },
+  { key: 'summary', label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project — logline, synopsis, genre, tone, and key story pillars at a glance.' },
+  { key: 'atlas', label: 'Atlas', icon: MapIcon, description: 'The map of your universe — locations, regions, timelines, factions, and how they connect.' },
+  { key: 'story-bible', label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP — characters, lore entries, rules, and everything that defines your story world.' },
+  { key: 'staging', label: 'Staging', icon: LayersIcon, description: 'Organize and sequence your narrative elements before they flow into a Creation.' },
+  { key: 'reference', label: 'Reference', icon: BookmarkIcon, description: 'Bookmarked inspiration, mood boards, visual references, and external links that inform your world.' },
+  { key: 'research', label: 'Research', icon: SearchIcon, description: 'Notes, fact-checking, historical context, and deep-dive material supporting your story.' },
 ];
 
 const deliverySections: Record<string, Section[]> = {
   novel: [
     { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — where the Lore Codex becomes a novel.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your manuscript for review, proofing, and publication.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your manuscript for review, proofing, and publication.' },
   ],
   novella: [
     { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — your novella takes shape here.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for review, proofing, and publication.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for review, proofing, and publication.' },
   ],
   short_story: [
     { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Draft and refine your short story.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for submission or publication.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for submission or publication.' },
   ],
   screenplay: [
     { key: 'script', label: 'Script', icon: PenLineIcon, description: 'Scenes, dialogue, and action lines in standard screenplay format.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Export to industry-standard formats.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Export to industry-standard formats.' },
   ],
   tv_series: [
     { key: 'script', label: 'Episodes & Scripts', icon: PenLineIcon, description: 'Episode breakdowns, scripts, and season arcs.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Package episodes for review and production.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Package episodes for review and production.' },
   ],
   video_game: [
     { key: 'narrative_design', label: 'Narrative Design', icon: PenLineIcon, description: 'Quests, dialogue trees, branching paths, and game narrative.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Export narrative assets for development.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Export narrative assets for development.' },
   ],
   comic: [
     { key: 'pages', label: 'Pages & Panels', icon: PenLineIcon, description: 'Issue breakdowns, page layouts, panel descriptions, and dialogue.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for lettering and print.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for lettering and print.' },
   ],
   manga: [
     { key: 'pages', label: 'Pages & Panels', icon: PenLineIcon, description: 'Chapter breakdowns, page layouts, and panel flow.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for publication.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for publication.' },
   ],
   animation: [
     { key: 'script', label: 'Script & Storyboard', icon: PenLineIcon, description: 'Scripts, storyboard notes, and visual direction.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Package for production.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Package for production.' },
   ],
   podcast: [
     { key: 'script', label: 'Episodes & Scripts', icon: PenLineIcon, description: 'Episode scripts, sound cues, and voice direction.' },
-    { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for recording and distribution.' },
+    { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for recording and distribution.' },
   ],
 };
 
 const defaultDeliverySections: Section[] = [
   { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Your primary creative output for this creation type.' },
-  { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your work for review and export.' },
+  { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your work for review and export.' },
 ];
 
 const projectTypeLabels: Record<string, string> = {
@@ -230,7 +215,7 @@ export default function ProjectPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('premise');
+  const [activeSection, setActiveSection] = useState('summary');
   const [activeDeliveryType, setActiveDeliveryType] = useState<string>('');
   const [deliveryDropdownOpen, setDeliveryDropdownOpen] = useState(false);
   const deliveryDropdownRef = useRef<HTMLDivElement>(null);
@@ -257,7 +242,7 @@ export default function ProjectPage() {
   // Sync active section when domain switches
   useEffect(() => {
     if (activeDomain === 'foundation') {
-      setActiveSection('premise');
+      setActiveSection('summary');
     } else {
       const sections = deliverySections[activeDeliveryType] || defaultDeliverySections;
       setActiveSection(sections[0]?.key || 'manuscript');
