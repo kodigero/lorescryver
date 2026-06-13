@@ -25,14 +25,6 @@ function FolderIcon({ className }: { className?: string }) {
   );
 }
 
-function BookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-    </svg>
-  );
-}
-
 function SettingsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -131,8 +123,6 @@ function HelpCircleIcon({ className }: { className?: string }) {
 
 const navItems = [
   { label: 'Projects', href: '/dashboard', icon: FolderIcon },
-  { label: 'Story Bible', href: '/dashboard/bible', icon: BookIcon },
-  { label: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
 ];
 
 /* ── Placeholder notifications ──────────────────────────────────────── */
@@ -210,7 +200,7 @@ export default function DashboardLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close search on Escape
+  // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -466,26 +456,6 @@ export default function DashboardLayout({
               );
             })}
           </nav>
-
-          {/* User area */}
-          <div className={`border-t ${sidebarBorder} p-3`}>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600/20 text-brand-400">
-                <UserIcon className="h-4 w-4" />
-              </div>
-              <div className="flex-1 truncate">
-                <div className="truncate text-sm font-medium">Test User</div>
-                <div className={`truncate text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>test@lorescryver.com</div>
-              </div>
-            </div>
-            <Link
-              href="/"
-              className={`mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isDark ? 'text-white/50 hover:text-white' : 'text-gray-500 hover:text-gray-900'} ${hoverBg} transition`}
-            >
-              <LogOutIcon className="h-4 w-4" />
-              Sign out
-            </Link>
-          </div>
         </aside>
 
         {/* Main content */}
