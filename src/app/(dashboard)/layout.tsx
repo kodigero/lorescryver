@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import ScryvePanel from '@/components/scryve-panel';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -470,6 +471,9 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+
+      {/* ── Scryve AI Assistant ─────────────────────────────────── */}
+      <ScryvePanel />
     </div>
   );
 }
