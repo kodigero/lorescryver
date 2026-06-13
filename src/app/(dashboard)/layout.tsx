@@ -168,7 +168,7 @@ function DomainToggle() {
             : 'text-muted-foreground hover:text-foreground'
         }`}
       >
-        Story Foundation
+        Lore Codex
       </button>
       <button
         onClick={() => setActiveDomain('delivery')}
@@ -178,7 +178,7 @@ function DomainToggle() {
             : 'text-muted-foreground hover:text-foreground'
         }`}
       >
-        Delivery · {deliveryLabel}
+        Creation · {deliveryLabel}
       </button>
     </div>
   );

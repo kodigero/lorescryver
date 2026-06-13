@@ -153,7 +153,7 @@ const foundationSections: Section[] = [
 
 const deliverySections: Record<string, Section[]> = {
   novel: [
-    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — where the Story Foundation becomes a novel.' },
+    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — where the Lore Codex becomes a novel.' },
     { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your manuscript for review, proofing, and publication.' },
   ],
   novella: [
@@ -195,7 +195,7 @@ const deliverySections: Record<string, Section[]> = {
 };
 
 const defaultDeliverySections: Section[] = [
-  { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Your primary creative output for this delivery type.' },
+  { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Your primary creative output for this creation type.' },
   { key: 'staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your work for review and export.' },
 ];
 
@@ -309,7 +309,7 @@ export default function ProjectPage() {
   const currentSections = activeDomain === 'foundation' ? foundationSections : currentDeliverySections;
   const currentSection = currentSections.find((s) => s.key === activeSection) || currentSections[0];
   const CurrentIcon = currentSection.icon;
-  const deliveryLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
+  const creationLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
 
   return (
     <div className="flex h-full">
@@ -334,7 +334,7 @@ export default function ProjectPage() {
           </div>
         </div>
 
-        {/* Delivery manager (only in delivery domain) */}
+        {/* Creation manager (only in creation domain) */}
         {activeDomain === 'delivery' && (
           <div className="border-b border-white/5 px-3 py-2" ref={deliveryDropdownRef}>
             <div className="relative">
@@ -342,17 +342,17 @@ export default function ProjectPage() {
                 onClick={() => setDeliveryDropdownOpen(!deliveryDropdownOpen)}
                 className="flex w-full items-center justify-between rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] transition"
               >
-                <span>{deliveryLabel}</span>
+                <span>{creationLabel}</span>
                 <ChevronDownIcon className={`h-3.5 w-3.5 text-muted-foreground transition ${deliveryDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {deliveryDropdownOpen && (
                 <div className="absolute left-0 top-full z-20 mt-1 w-full rounded-lg border border-white/10 bg-[hsl(240,6%,10%)] py-1 shadow-xl">
                   <div className="flex items-center justify-between px-2.5 py-1.5">
-                    <span className="text-xs font-medium text-brand-400">{deliveryLabel}</span>
+                    <span className="text-xs font-medium text-brand-400">{creationLabel}</span>
                     <button
                       className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-white/5 hover:text-foreground transition"
-                      title="Delivery settings"
+                      title="Creation settings"
                     >
                       <SettingsIcon className="h-3 w-3" />
                     </button>
@@ -360,7 +360,7 @@ export default function ProjectPage() {
                   <div className="border-t border-white/5 my-1" />
                   <button className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition">
                     <PlusIcon className="h-3 w-3" />
-                    Add Delivery Type
+                    Add Creation Type
                   </button>
                 </div>
               )}
