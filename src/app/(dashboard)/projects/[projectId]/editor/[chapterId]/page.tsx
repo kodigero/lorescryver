@@ -1,7 +1,8 @@
-export default function ChapterEditorPage({
+export default async function ChapterEditorPage({
   params,
 }: {
-  params: { projectId: string; chapterId: string };
+  params: Promise<{ projectId: string; chapterId: string }>;
 }) {
-  return <div>Editing chapter: {params.chapterId}</div>;
+  const { chapterId } = await params;
+  return <div>Editing chapter: {chapterId}</div>;
 }
