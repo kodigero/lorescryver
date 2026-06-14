@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
-function SaveIcon({ className }: { className?: string }) {
+function ScryveIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-      <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-      <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+      <path d="M12 19l7-7 3 3-7 7-3-3z" />
+      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+      <path d="M2 2l7.586 7.586" />
+      <circle cx="11" cy="11" r="2" />
     </svg>
   );
 }
@@ -30,7 +31,89 @@ function SpinnerIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Card definitions ───────────────────────────────────────────────── */
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m22 2-7 20-4-9-9-4Z" />
+      <path d="M22 2 11 13" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </svg>
+  );
+}
+
+/* ── Wizard step definitions ────────────────────────────────────────── */
+
+interface WizardStep {
+  key: string;
+  fieldKey: string;
+  question: string;
+  placeholder: string;
+  rows: number;
+}
+
+const wizardSteps: WizardStep[] = [
+  {
+    key: 'synopsis',
+    fieldKey: 'synopsis',
+    question: "Let's start with the big picture. What's your story about? Don't worry about being polished — just tell me what happens, to whom, and why it matters.",
+    placeholder: 'A young cartographer discovers that the maps she draws come alive at night...',
+    rows: 4,
+  },
+  {
+    key: 'genre',
+    fieldKey: 'genre',
+    question: "What genre does this story live in? It can be a blend — most great stories are.",
+    placeholder: 'Dark fantasy with elements of mystery...',
+    rows: 2,
+  },
+  {
+    key: 'tone',
+    fieldKey: 'tone',
+    question: "How does this story feel? If it were a room, what would the lighting, temperature, and soundtrack be like?",
+    placeholder: 'Atmospheric and tense, with moments of quiet wonder...',
+    rows: 2,
+  },
+  {
+    key: 'scope',
+    fieldKey: 'scope',
+    question: "How big is the world of this story? A single room? A sprawling continent? The entire cosmos?",
+    placeholder: 'Set across three interconnected island cities...',
+    rows: 2,
+  },
+  {
+    key: 'mainCharacters',
+    fieldKey: 'mainCharacters',
+    question: "Who drives this story? Give me names and quick sketches — who they are, what they want, why they matter.",
+    placeholder: "Mira — a reluctant cartographer haunted by her mentor's disappearance...",
+    rows: 4,
+  },
+  {
+    key: 'mainConflict',
+    fieldKey: 'mainConflict',
+    question: "What's the central conflict? What does the protagonist need, and what's standing in the way?",
+    placeholder: 'Mira must find her missing mentor before the maps consume the real world...',
+    rows: 3,
+  },
+  {
+    key: 'outlineOverview',
+    fieldKey: 'outlineOverview',
+    question: "Last one. Do you have a rough shape for the story? Major beats, turning points, how it begins and ends? Even loose ideas are fine — I'll help structure them.",
+    placeholder: 'Act 1: Mira discovers her maps are changing reality. Act 2: She journeys across...',
+    rows: 5,
+  },
+];
+
+/* ── Card definitions (for the editable view) ───────────────────────── */
 
 interface CardDef {
   key: string;
@@ -40,55 +123,20 @@ interface CardDef {
 }
 
 const cards: CardDef[] = [
-  {
-    key: 'summary.synopsis',
-    title: 'Synopsis',
-    placeholder: 'Write a working summary of your story. What happens, to whom, and what\'s at stake? This is your north star — not a pitch, but a compass.',
-    rows: 6,
-  },
-  {
-    key: 'summary.genre',
-    title: 'Genre',
-    placeholder: 'What genre does this story belong to? (e.g., Dark Fantasy, Psychological Thriller, Space Opera, Slice of Life)',
-    rows: 2,
-  },
-  {
-    key: 'summary.tone',
-    title: 'Tone',
-    placeholder: 'What does the story feel like? (e.g., Gritty and grounded, Whimsical and lighthearted, Tense and claustrophobic, Melancholic)',
-    rows: 2,
-  },
-  {
-    key: 'summary.scope',
-    title: 'Scope',
-    placeholder: 'How large is the world of this story? A single room? A city? A continent? The entire universe? Define the boundaries.',
-    rows: 3,
-  },
-  {
-    key: 'summary.main_characters',
-    title: 'Main Characters',
-    placeholder: 'Who drives this story? List the key characters and their roles. Keep it brief — full profiles live in the Story Bible.',
-    rows: 5,
-  },
-  {
-    key: 'summary.main_conflict',
-    title: 'Main Conflict',
-    placeholder: 'What is the central tension? What does the protagonist want, and what stands in the way?',
-    rows: 4,
-  },
-  {
-    key: 'summary.outline_overview',
-    title: 'Outline Overview',
-    placeholder: 'Map out the high-level structure — acts, major beats, turning points. This is the skeleton your story hangs on.',
-    rows: 8,
-  },
+  { key: 'summary.synopsis', title: 'Synopsis', placeholder: 'Working summary of your story...', rows: 6 },
+  { key: 'summary.genre', title: 'Genre', placeholder: 'Story genre...', rows: 2 },
+  { key: 'summary.tone', title: 'Tone', placeholder: 'Mood and atmosphere...', rows: 2 },
+  { key: 'summary.scope', title: 'Scope', placeholder: 'Scale of the story world...', rows: 3 },
+  { key: 'summary.main_characters', title: 'Main Characters', placeholder: 'Key characters and roles...', rows: 5 },
+  { key: 'summary.main_conflict', title: 'Main Conflict', placeholder: 'Central dramatic tension...', rows: 4 },
+  { key: 'summary.outline_overview', title: 'Outline Overview', placeholder: 'High-level story structure...', rows: 8 },
 ];
 
-/* ── Save states ────────────────────────────────────────────────────── */
+/* ── Save state type ────────────────────────────────────────────────── */
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-/* ── Single Card component ──────────────────────────────────────────── */
+/* ── Editable Card component ────────────────────────────────────────── */
 
 function SummaryCard({
   card,
@@ -104,7 +152,6 @@ function SummaryCard({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef(initialContent);
 
-  // Update local state if initial content changes (e.g., on reload)
   useEffect(() => {
     setValue(initialContent);
     lastSavedRef.current = initialContent;
@@ -136,7 +183,6 @@ function SummaryCard({
     debounceRef.current = setTimeout(() => save(text), 800);
   };
 
-  // Save on blur immediately
   const handleBlur = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value !== lastSavedRef.current) save(value);
@@ -175,25 +221,135 @@ function SummaryCard({
   );
 }
 
-/* ── Summary Section ────────────────────────────────────────────────── */
+/* ── Wizard Chat Bubbles ────────────────────────────────────────────── */
+
+function ScryveMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600/20">
+        <ScryveIcon className="h-4 w-4 text-brand-400" />
+      </div>
+      <div className="rounded-2xl rounded-tl-md bg-white/[0.06] px-4 py-3 text-sm leading-relaxed text-white/90">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function UserMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 px-4 py-3 text-sm leading-relaxed text-white">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Summary Section ───────────────────────────────────────────── */
 
 export default function SummarySection({ projectId }: { projectId: string }) {
   const [sectionData, setSectionData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [hasContent, setHasContent] = useState(false);
+  const [wizardActive, setWizardActive] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currentInput, setCurrentInput] = useState('');
+  const [consolidating, setConsolidating] = useState(false);
+  const [consolidateError, setConsolidateError] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Load existing section data
   useEffect(() => {
     fetch(`/api/projects/${projectId}/sections`)
       .then((r) => r.json())
       .then((data) => {
         const mapped: Record<string, string> = {};
+        let found = false;
         for (const [key, val] of Object.entries(data)) {
-          mapped[key] = (val as { content: string }).content || '';
+          const content = (val as { content: string }).content || '';
+          mapped[key] = content;
+          if (key.startsWith('summary.') && content.trim()) found = true;
         }
         setSectionData(mapped);
+        setHasContent(found);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [projectId]);
+
+  // Auto-scroll wizard chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentStep, answers]);
+
+  // Focus input when step changes
+  useEffect(() => {
+    if (wizardActive && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [currentStep, wizardActive]);
+
+  function startWizard() {
+    setWizardActive(true);
+    setCurrentStep(0);
+    setAnswers({});
+    setCurrentInput('');
+    setConsolidateError('');
+  }
+
+  function submitAnswer() {
+    const text = currentInput.trim();
+    if (!text) return;
+
+    const step = wizardSteps[currentStep];
+    const newAnswers = { ...answers, [step.fieldKey]: text };
+    setAnswers(newAnswers);
+    setCurrentInput('');
+
+    if (currentStep < wizardSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      consolidate(newAnswers);
+    }
+  }
+
+  async function consolidate(finalAnswers: Record<string, string>) {
+    setConsolidating(true);
+    setConsolidateError('');
+
+    try {
+      const res = await fetch('/api/scryve/consolidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, answers: finalAnswers }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Consolidation failed');
+      }
+
+      // Update section data with AI-generated content
+      setSectionData((prev) => ({ ...prev, ...data.sections }));
+      setHasContent(true);
+      setWizardActive(false);
+    } catch (err) {
+      setConsolidateError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setConsolidating(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitAnswer();
+    }
+  }
 
   if (loading) {
     return (
@@ -203,16 +359,154 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     );
   }
 
+  /* ── Wizard view ─────────────────────────────────────────────────── */
+
+  if (wizardActive) {
+    return (
+      <div className="mx-auto max-w-2xl flex flex-col h-full">
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              Question {Math.min(currentStep + 1, wizardSteps.length)} of {wizardSteps.length}
+            </span>
+            {!consolidating && (
+              <button
+                onClick={() => setWizardActive(false)}
+                className="text-xs text-muted-foreground hover:text-foreground transition"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+          <div className="h-1 rounded-full bg-white/[0.06]">
+            <div
+              className="h-1 rounded-full bg-brand-500 transition-all duration-500"
+              style={{ width: `${((Object.keys(answers).length) / wizardSteps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Chat area */}
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {wizardSteps.map((step, i) => {
+            if (i > currentStep) return null;
+
+            return (
+              <div key={step.key} className="space-y-3">
+                <ScryveMessage>{step.question}</ScryveMessage>
+                {answers[step.fieldKey] && (
+                  <UserMessage>{answers[step.fieldKey]}</UserMessage>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Consolidating state */}
+          {consolidating && (
+            <ScryveMessage>
+              <div className="flex items-center gap-2">
+                <SpinnerIcon className="h-4 w-4 animate-spin text-brand-400" />
+                <span>I&apos;m reviewing your answers and structuring your Summary. Give me a moment...</span>
+              </div>
+            </ScryveMessage>
+          )}
+
+          {/* Error state */}
+          {consolidateError && (
+            <ScryveMessage>
+              <div className="text-red-400">
+                Something went wrong: {consolidateError}
+                <button
+                  onClick={() => consolidate(answers)}
+                  className="ml-2 underline hover:no-underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </ScryveMessage>
+          )}
+
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input area */}
+        {!consolidating && currentStep < wizardSteps.length && !answers[wizardSteps[currentStep]?.fieldKey] && (
+          <div className="border-t border-white/5 pt-4">
+            <div className="flex items-end gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <textarea
+                ref={inputRef}
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={wizardSteps[currentStep].placeholder}
+                rows={wizardSteps[currentStep].rows}
+                className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/30 outline-none leading-relaxed"
+              />
+              <button
+                onClick={submitAnswer}
+                disabled={!currentInput.trim()}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-30"
+              >
+                <SendIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-white/20">
+              Press Enter to submit · Shift+Enter for new line
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── Empty state — no content yet ────────────────────────────────── */
+
+  if (!hasContent) {
+    return (
+      <div className="mx-auto max-w-2xl py-16 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
+          <ScryveIcon className="h-8 w-8 text-brand-400" />
+        </div>
+        <h2 className="text-xl font-bold">Set up your Summary</h2>
+        <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+          Scryve will ask you a few questions about your story, then consolidate your answers into a structured Summary — your project&apos;s north star.
+        </p>
+        <button
+          onClick={startWizard}
+          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
+        >
+          <ScryveIcon className="h-4 w-4" />
+          Start Content Wizard
+        </button>
+      </div>
+    );
+  }
+
+  /* ── Content view — editable cards ───────────────────────────────── */
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      {cards.map((card) => (
-        <SummaryCard
-          key={card.key}
-          card={card}
-          projectId={projectId}
-          initialContent={sectionData[card.key] || ''}
-        />
-      ))}
+    <div className="mx-auto max-w-3xl">
+      <div className="flex items-center justify-between mb-6">
+        <div />
+        <button
+          onClick={startWizard}
+          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition"
+        >
+          <RefreshIcon className="h-3 w-3" />
+          Re-run Wizard
+        </button>
+      </div>
+      <div className="space-y-4">
+        {cards.map((card) => (
+          <SummaryCard
+            key={card.key}
+            card={card}
+            projectId={projectId}
+            initialContent={sectionData[card.key] || ''}
+          />
+        ))}
+      </div>
     </div>
   );
 }
