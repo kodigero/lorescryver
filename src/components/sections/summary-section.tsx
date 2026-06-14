@@ -51,7 +51,8 @@ function RefreshIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Wizard step definitions ────────────────────────────────────────── */
+/* ── Micro-question wizard steps ────────────────────────────────────── */
+/* Each question = ONE thought. The author just answers, Scryve thinks. */
 
 interface WizardStep {
   key: string;
@@ -63,53 +64,95 @@ interface WizardStep {
 
 const wizardSteps: WizardStep[] = [
   {
-    key: 'synopsis',
-    fieldKey: 'synopsis',
-    question: "Let's start with the big picture. What's your story about? Don't worry about being polished — just tell me what happens, to whom, and why it matters.",
-    placeholder: 'A young cartographer discovers that the maps she draws come alive at night...',
-    rows: 4,
+    key: 'protagonistName',
+    fieldKey: 'protagonistName',
+    question: "What's your main character's name?",
+    placeholder: 'Kaelith',
+    rows: 1,
+  },
+  {
+    key: 'protagonistDesc',
+    fieldKey: 'protagonistDesc',
+    question: "In a few words, who are they?",
+    placeholder: 'A tired detective with a secret',
+    rows: 1,
+  },
+  {
+    key: 'protagonistDesire',
+    fieldKey: 'protagonistDesire',
+    question: "What do they want more than anything?",
+    placeholder: 'To find their missing sister',
+    rows: 1,
+  },
+  {
+    key: 'setting',
+    fieldKey: 'setting',
+    question: "Where does the story take place?",
+    placeholder: 'A rain-soaked port city',
+    rows: 1,
+  },
+  {
+    key: 'timePeriod',
+    fieldKey: 'timePeriod',
+    question: "When does it happen?",
+    placeholder: 'Modern day, medieval, far future...',
+    rows: 1,
   },
   {
     key: 'genre',
     fieldKey: 'genre',
-    question: "What genre does this story live in? It can be a blend — most great stories are.",
-    placeholder: 'Dark fantasy with elements of mystery...',
-    rows: 2,
+    question: "What genre is it?",
+    placeholder: 'Dark fantasy, sci-fi thriller, romance...',
+    rows: 1,
   },
   {
     key: 'tone',
     fieldKey: 'tone',
-    question: "How does this story feel? If it were a room, what would the lighting, temperature, and soundtrack be like?",
-    placeholder: 'Atmospheric and tense, with moments of quiet wonder...',
+    question: "How does the story feel? One or two words.",
+    placeholder: 'Tense, hopeful, eerie...',
+    rows: 1,
+  },
+  {
+    key: 'worldScale',
+    fieldKey: 'worldScale',
+    question: "How big is the world? A single room, a city, a whole planet?",
+    placeholder: 'A sprawling continent',
+    rows: 1,
+  },
+  {
+    key: 'incitingIncident',
+    fieldKey: 'incitingIncident',
+    question: "What event kicks the story off?",
+    placeholder: 'A letter arrives with a cryptic warning',
     rows: 2,
   },
   {
-    key: 'scope',
-    fieldKey: 'scope',
-    question: "How big is the world of this story? A single room? A sprawling continent? The entire cosmos?",
-    placeholder: 'Set across three interconnected island cities...',
+    key: 'obstacle',
+    fieldKey: 'obstacle',
+    question: "What's standing in your character's way?",
+    placeholder: 'A corrupt guild controls the only route forward',
     rows: 2,
   },
   {
-    key: 'mainCharacters',
-    fieldKey: 'mainCharacters',
-    question: "Who drives this story? Give me names and quick sketches — who they are, what they want, why they matter.",
-    placeholder: "Mira — a reluctant cartographer haunted by her mentor's disappearance...",
-    rows: 4,
+    key: 'supportingCast',
+    fieldKey: 'supportingCast',
+    question: "Any other important characters? Just names and a word or two each.",
+    placeholder: 'Renn — loyal friend, Vara — rival spy',
+    rows: 2,
   },
   {
-    key: 'mainConflict',
-    fieldKey: 'mainConflict',
-    question: "What's the central conflict? What does the protagonist need, and what's standing in the way?",
-    placeholder: 'Mira must find her missing mentor before the maps consume the real world...',
-    rows: 3,
+    key: 'turningPoint',
+    fieldKey: 'turningPoint',
+    question: "What's a major turning point in the story?",
+    placeholder: 'She discovers the villain is her mentor',
+    rows: 2,
   },
   {
-    key: 'outlineOverview',
-    fieldKey: 'outlineOverview',
-    question: "Last one. Do you have a rough shape for the story? Major beats, turning points, how it begins and ends? Even loose ideas are fine — I'll help structure them.",
-    placeholder: 'Act 1: Mira discovers her maps are changing reality. Act 2: She journeys across...',
-    rows: 5,
+    key: 'ending',
+    fieldKey: 'ending',
+    question: "Last one — how does it end? Even a rough idea works.",
+    placeholder: 'She wins but loses someone she loves',
+    rows: 2,
   },
 ];
 
@@ -333,7 +376,6 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         throw new Error(data.error || 'Consolidation failed');
       }
 
-      // Update section data with AI-generated content
       setSectionData((prev) => ({ ...prev, ...data.sections }));
       setHasContent(true);
       setWizardActive(false);
@@ -368,7 +410,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-muted-foreground">
-              Question {Math.min(currentStep + 1, wizardSteps.length)} of {wizardSteps.length}
+              {Object.keys(answers).length} of {wizardSteps.length} answered
             </span>
             {!consolidating && (
               <button
@@ -389,6 +431,11 @@ export default function SummarySection({ projectId }: { projectId: string }) {
 
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {/* Intro message */}
+          {currentStep === 0 && Object.keys(answers).length === 0 && (
+            <ScryveMessage>Quick questions — just answer off the top of your head. I&apos;ll do the heavy lifting.</ScryveMessage>
+          )}
+
           {wizardSteps.map((step, i) => {
             if (i > currentStep) return null;
 
@@ -407,7 +454,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
             <ScryveMessage>
               <div className="flex items-center gap-2">
                 <SpinnerIcon className="h-4 w-4 animate-spin text-brand-400" />
-                <span>I&apos;m reviewing your answers and structuring your Summary. Give me a moment...</span>
+                <span>Got it all. Putting your Summary together now...</span>
               </div>
             </ScryveMessage>
           )}
@@ -433,15 +480,16 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         {/* Input area */}
         {!consolidating && currentStep < wizardSteps.length && !answers[wizardSteps[currentStep]?.fieldKey] && (
           <div className="border-t border-white/5 pt-4">
-            <div className="flex items-end gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <textarea
-                ref={inputRef}
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <input
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type="text"
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={wizardSteps[currentStep].placeholder}
-                rows={wizardSteps[currentStep].rows}
-                className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/30 outline-none leading-relaxed"
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+                autoFocus
               />
               <button
                 onClick={submitAnswer}
@@ -452,7 +500,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
               </button>
             </div>
             <p className="mt-2 text-center text-[10px] text-white/20">
-              Press Enter to submit · Shift+Enter for new line
+              Press Enter to submit
             </p>
           </div>
         )}
@@ -470,7 +518,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         </div>
         <h2 className="text-xl font-bold">Set up your Summary</h2>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Scryve will ask you a few questions about your story, then consolidate your answers into a structured Summary — your project&apos;s north star.
+          Answer a few quick questions and Scryve will build your Summary for you. No overthinking — just answer off the top of your head.
         </p>
         <button
           onClick={startWizard}
