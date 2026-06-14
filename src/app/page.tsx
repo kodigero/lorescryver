@@ -135,7 +135,7 @@ const pipeline = [
   {
     step: '01',
     title: 'Ideate & Worldbuild',
-    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you're writing a novel, a game script, or a screenplay.',
+    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you’re writing a novel, a game script, or a screenplay.',
     icon: SparklesIcon,
   },
   {
