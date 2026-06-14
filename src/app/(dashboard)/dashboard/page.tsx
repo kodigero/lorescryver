@@ -62,9 +62,13 @@ function ChevronDownIcon({ className }: { className?: string }) {
 }
 
 /* ── Project type options ───────────────────────────────────────────── */
+/* Only Novel is enabled for now. Others will be added as each workspace is polished. */
 
 const projectTypes = [
   { value: 'novel', label: 'Novel' },
+];
+
+/* Full list for future reference:
   { value: 'novella', label: 'Novella' },
   { value: 'short_story', label: 'Short Story' },
   { value: 'screenplay', label: 'Screenplay' },
@@ -83,7 +87,7 @@ const projectTypes = [
   { value: 'poetry', label: 'Poetry Collection' },
   { value: 'nonfiction', label: 'Narrative Non-Fiction' },
   { value: 'other', label: 'Other' },
-];
+*/
 
 const projectTypeLabels: Record<string, string> = Object.fromEntries(
   projectTypes.map((t) => [t.value, t.label])
