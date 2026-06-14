@@ -107,6 +107,13 @@ interface NextResult {
   phase: number;
 }
 
+interface ParsedResponse {
+  intent: 'answer' | 'skip';
+  name?: string;
+  role?: string;
+  value?: string;
+}
+
 type SaveState = 'idle' | 'saving' | 'saved';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
@@ -142,9 +149,22 @@ const cards: CardDef[] = [
   { key: 'summary.synopsis', title: 'Synopsis', placeholder: 'Working summary of your story...', rows: 6 },
 ];
 
+/* ── AI Parse Steps ─────────────────────────────────────────────────── */
+
+const NAME_STEPS = new Set([
+  'important_person', 'role_model', 'confidant', 'anchor', 'enemy',
+  'antagonist', 'extra_name', 'antagonist_ally',
+]);
+
+const SKIP_PATTERN = /^(skip|pass|idk|i\s*don'?t\s*know|not\s*sure|no\s*one|none|no\s*idea|haven'?t\s*decided|i'?ll\s*decide\s*later|how\s*should\s*i\s*know|maybe\s*later|can'?t\s*think|not\s*yet|dunno|nah|nope|no\s*clue|i\s*don'?t\s*have).*$/i;
+
+function isSkipAnswer(answer: string): boolean {
+  return SKIP_PATTERN.test(answer.trim().replace(/[?.!,]+$/, ''));
+}
+
 /* ── State Machine ──────────────────────────────────────────────────── */
 
-function processAnswer(stepId: string, answer: string, data: WizardData): NextResult {
+function processAnswer(stepId: string, answer: string, data: WizardData, parsedRole?: string): NextResult {
   const d: WizardData = {
     ...data,
     characters: data.characters.map(c => ({ ...c, roles: [...c.roles] })),
@@ -162,6 +182,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     /* ── Phase 0: Characters ── */
 
     case 'protagonist_name': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'protagonist_name', question: 'Come on, every story needs a hero! What\'s your protagonist\'s name?', placeholder: 'a name' }, transitions: ['I need at least a name to work with!'], phase: 0 };
+      }
       d.protagonistName = answer;
       return { data: d, step: { id: 'protagonist_gender', question: `Is ${answer} male or female?`, placeholder: '', choices: ['Male', 'Female'] }, transitions: [], phase: 0 };
     }
@@ -172,16 +195,25 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'protagonist_occupation': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'protagonist_location', question: `Where does ${d.protagonistName} live?`, placeholder: 'Tokyo, Mars, Winterfell...' }, transitions: ['That\'s fine — we can figure that out later!'], phase: 0 };
+      }
       d.protagonistOccupation = answer;
       return { data: d, step: { id: 'protagonist_location', question: `Where does ${d.protagonistName} live?`, placeholder: 'Tokyo, Mars, Winterfell...' }, transitions: [], phase: 0 };
     }
 
     case 'protagonist_location': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'important_person', question: `Who is the most important person in ${d.protagonistName}'s life?`, placeholder: 'a name' }, transitions: ['No problem! Let\'s talk about the people around ' + d.protagonistName + '.'], phase: 0 };
+      }
       d.protagonistLocation = answer;
       return { data: d, step: { id: 'important_person', question: `Who is the most important person in ${d.protagonistName}'s life?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'important_person': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: ['No worries! Let\'s move on.'], phase: 0 };
+      }
       d._temp = answer;
       const ex = findChar(answer);
       if (ex) {
@@ -189,16 +221,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         d._temp = '';
         return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: [], phase: 0 };
       }
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['important_person'] });
+        d._temp = '';
+        return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'important_person_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'mother, wife, mentor...' }, transitions: [], phase: 0 };
     }
 
     case 'important_person_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['important_person'] });
+        d._temp = '';
+        return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['important_person'] });
       d._temp = '';
       return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'role_model': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: ['No worries! Moving on.'], phase: 0 };
+      }
       d._temp = answer;
       const ex = findChar(answer);
       if (ex) {
@@ -206,16 +251,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         d._temp = '';
         return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: [], phase: 0 };
       }
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['role_model'] });
+        d._temp = '';
+        return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'role_model_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'father, teacher, captain...' }, transitions: [], phase: 0 };
     }
 
     case 'role_model_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['role_model'] });
+        d._temp = '';
+        return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['role_model'] });
       d._temp = '';
       return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'confidant': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: ['That\'s okay! Let\'s keep going.'], phase: 0 };
+      }
       d._temp = answer;
       const ex = findChar(answer);
       if (ex) {
@@ -223,16 +281,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         d._temp = '';
         return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: [], phase: 0 };
       }
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['confidant'] });
+        d._temp = '';
+        return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'confidant_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'best friend, sister, partner...' }, transitions: [], phase: 0 };
     }
 
     case 'confidant_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['confidant'] });
+        d._temp = '';
+        return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['confidant'] });
       d._temp = '';
       return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'anchor': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: ['No problem! Next one.'], phase: 0 };
+      }
       d._temp = answer;
       const ex = findChar(answer);
       if (ex) {
@@ -240,16 +311,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         d._temp = '';
         return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: [], phase: 0 };
       }
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['anchor'] });
+        d._temp = '';
+        return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'anchor_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'grandmother, coach, lover...' }, transitions: [], phase: 0 };
     }
 
     case 'anchor_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['anchor'] });
+        d._temp = '';
+        return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['anchor'] });
       d._temp = '';
       return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'enemy': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: ['Fair enough! Let\'s talk about the bigger picture.'], phase: 0 };
+      }
       d._temp = answer;
       const ex = findChar(answer);
       if (ex) {
@@ -257,16 +341,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         d._temp = '';
         return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: [], phase: 0 };
       }
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['enemy'] });
+        d._temp = '';
+        return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'enemy_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'rival, bully, ex-partner...' }, transitions: [], phase: 0 };
     }
 
     case 'enemy_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['enemy'] });
+        d._temp = '';
+        return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['enemy'] });
       d._temp = '';
       return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: [], phase: 0 };
     }
 
     case 'antagonist': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'more_characters', question: 'Anyone else who plays a major role we haven\'t mentioned?', placeholder: '', choices: ['Yes', 'No'] }, transitions: ['Every story needs something to push against — but we can circle back to this!'], phase: 0 };
+      }
       d.antagonistName = answer;
       return { data: d, step: { id: 'antagonist_is_person', question: `Is ${answer} a person?`, placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
     }
@@ -292,16 +389,43 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'antagonist_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d.antagonistName, gender: d.antagonistGender, relationship: '', roles: ['antagonist'] });
+        return { data: d, step: { id: 'antagonist_ally', question: `Who is ${d.antagonistName}'s most loyal ally?`, placeholder: 'a name' }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d.antagonistName, gender: d.antagonistGender, relationship: answer, roles: ['antagonist'] });
       return { data: d, step: { id: 'antagonist_ally', question: `Who is ${d.antagonistName}'s most loyal ally?`, placeholder: 'a name' }, transitions: [], phase: 0 };
     }
 
     case 'antagonist_ally': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'more_characters', question: 'Anyone else who plays a major role we haven\'t mentioned?', placeholder: '', choices: ['Yes', 'No'] }, transitions: ['No worries!'], phase: 0 };
+      }
       d._temp = answer;
+      if (parsedRole) {
+        const allyEx = findChar(answer);
+        if (allyEx) {
+          allyEx.roles.push('antagonist_ally');
+        } else {
+          d.characters.push({ name: answer, gender: '', relationship: `${parsedRole} (to ${d.antagonistName})`, roles: ['antagonist_ally'] });
+        }
+        d._temp = '';
+        return { data: d, step: { id: 'more_allies', question: `Anyone else backing ${d.antagonistName}?`, placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'antagonist_ally_rel', question: `What is ${answer} to ${d.antagonistName}?`, placeholder: 'lieutenant, advisor, servant...' }, transitions: [], phase: 0 };
     }
 
     case 'antagonist_ally_rel': {
+      if (answer === '__SKIP__') {
+        const allyEx = findChar(d._temp);
+        if (allyEx) {
+          allyEx.roles.push('antagonist_ally');
+        } else {
+          d.characters.push({ name: d._temp, gender: '', relationship: `(to ${d.antagonistName})`, roles: ['antagonist_ally'] });
+        }
+        d._temp = '';
+        return { data: d, step: { id: 'more_allies', question: `Anyone else backing ${d.antagonistName}?`, placeholder: '', choices: ['Yes', 'No'] }, transitions: ['Got it!'], phase: 0 };
+      }
       const allyEx = findChar(d._temp);
       if (allyEx) {
         allyEx.roles.push('antagonist_ally');
@@ -332,11 +456,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'extra_name': {
+      if (answer === '__SKIP__') {
+        return {
+          data: d,
+          step: { id: 'checkpoint_characters', question: 'We\'ve mapped out the cast! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] },
+          transitions: [],
+          phase: 0,
+        };
+      }
       d._temp = answer;
+      if (parsedRole) {
+        d.characters.push({ name: answer, gender: '', relationship: parsedRole, roles: ['other'] });
+        d._temp = '';
+        return { data: d, step: { id: 'more_characters', question: 'Anyone else?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+      }
       return { data: d, step: { id: 'extra_rel', question: `What is ${answer} to ${n}?`, placeholder: 'ally, lover, stranger...' }, transitions: [], phase: 0 };
     }
 
     case 'extra_rel': {
+      if (answer === '__SKIP__') {
+        d.characters.push({ name: d._temp, gender: '', relationship: '', roles: ['other'] });
+        d._temp = '';
+        return { data: d, step: { id: 'more_characters', question: 'Anyone else?', placeholder: '', choices: ['Yes', 'No'] }, transitions: ['Got it!'], phase: 0 };
+      }
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['other'] });
       d._temp = '';
       return { data: d, step: { id: 'more_characters', question: 'Anyone else?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
@@ -358,6 +500,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'add_info_characters': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'checkpoint_characters', question: 'Got it! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] }, transitions: [], phase: 0 };
+      }
       d.notes.push(`Characters: ${answer}`);
       return { data: d, step: { id: 'checkpoint_characters', question: 'Got it! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] }, transitions: [], phase: 0 };
     }
@@ -365,16 +510,30 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     /* ── Phase 1: Scope ── */
 
     case 'scope_location': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'scope_time', question: 'What time period?', placeholder: 'medieval, modern, 2185...' }, transitions: ['We can decide the setting later!'], phase: 1 };
+      }
       d.scopeLocation = answer;
       return { data: d, step: { id: 'scope_time', question: 'What time period?', placeholder: 'medieval, modern, 2185...' }, transitions: [], phase: 1 };
     }
 
     case 'scope_time': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'scope_installments', question: 'Single story or series?', placeholder: 'single, trilogy, series...' }, transitions: ['No problem!'], phase: 1 };
+      }
       d.scopeTime = answer;
       return { data: d, step: { id: 'scope_installments', question: 'Single story or series?', placeholder: 'single, trilogy, series...' }, transitions: [], phase: 1 };
     }
 
     case 'scope_installments': {
+      if (answer === '__SKIP__') {
+        return {
+          data: d,
+          step: { id: 'checkpoint_scope', question: 'The world is taking shape! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] },
+          transitions: [],
+          phase: 1,
+        };
+      }
       d.scopeInstallments = answer;
       return {
         data: d,
@@ -392,7 +551,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
       }
       const q = d.antagonistIsCharacter
         ? `What does ${d.antagonistName} want?`
-        : `What does ${d.antagonistName} threaten?`;
+        : d.antagonistName
+        ? `What does ${d.antagonistName} threaten?`
+        : `What is the main force of conflict in ${n}'s world?`;
       return {
         data: d,
         step: { id: 'conflict_want', question: q, placeholder: 'power, revenge, survival...' },
@@ -402,6 +563,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'add_info_scope': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'checkpoint_scope', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] }, transitions: [], phase: 1 };
+      }
       d.notes.push(`Scope: ${answer}`);
       return { data: d, step: { id: 'checkpoint_scope', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] }, transitions: [], phase: 1 };
     }
@@ -409,11 +573,22 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     /* ── Phase 2: Conflict ── */
 
     case 'conflict_want': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'conflict_stakes', question: `What does ${n} stand to lose?`, placeholder: 'family, freedom, identity...' }, transitions: ['We can flesh this out later!'], phase: 2 };
+      }
       d.conflictWant = answer;
       return { data: d, step: { id: 'conflict_stakes', question: `What does ${n} stand to lose?`, placeholder: 'family, freedom, identity...' }, transitions: [], phase: 2 };
     }
 
     case 'conflict_stakes': {
+      if (answer === '__SKIP__') {
+        return {
+          data: d,
+          step: { id: 'checkpoint_conflict', question: 'The stakes are clear! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] },
+          transitions: [],
+          phase: 2,
+        };
+      }
       d.conflictStakes = answer;
       return {
         data: d,
@@ -438,6 +613,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'add_info_conflict': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'checkpoint_conflict', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] }, transitions: [], phase: 2 };
+      }
       d.notes.push(`Conflict: ${answer}`);
       return { data: d, step: { id: 'checkpoint_conflict', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] }, transitions: [], phase: 2 };
     }
@@ -445,16 +623,30 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     /* ── Phase 3: Outline ── */
 
     case 'outline_before': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'outline_turning', question: 'What triggers the turning point?', placeholder: 'betrayal, discovery, death...' }, transitions: ['No worries!'], phase: 3 };
+      }
       d.outlineBefore = answer;
       return { data: d, step: { id: 'outline_turning', question: 'What triggers the turning point?', placeholder: 'betrayal, discovery, death...' }, transitions: [], phase: 3 };
     }
 
     case 'outline_turning': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'outline_ending', question: 'How does it end?', placeholder: 'victory, sacrifice, escape...' }, transitions: ['We can figure that out later!'], phase: 3 };
+      }
       d.outlineTurning = answer;
       return { data: d, step: { id: 'outline_ending', question: 'How does it end?', placeholder: 'victory, sacrifice, escape...' }, transitions: [], phase: 3 };
     }
 
     case 'outline_ending': {
+      if (answer === '__SKIP__') {
+        return {
+          data: d,
+          step: { id: 'checkpoint_outline', question: 'The plot is mapped! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] },
+          transitions: [],
+          phase: 3,
+        };
+      }
       d.outlineEnding = answer;
       return {
         data: d,
@@ -480,6 +672,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
     }
 
     case 'add_info_outline': {
+      if (answer === '__SKIP__') {
+        return { data: d, step: { id: 'checkpoint_outline', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] }, transitions: [], phase: 3 };
+      }
       d.notes.push(`Outline: ${answer}`);
       return { data: d, step: { id: 'checkpoint_outline', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] }, transitions: [], phase: 3 };
     }
@@ -603,6 +798,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   const [currentInput, setCurrentInput] = useState('');
   const [consolidating, setConsolidating] = useState(false);
   const [consolidateError, setConsolidateError] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -630,10 +826,10 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   }, [messages]);
 
   useEffect(() => {
-    if (wizardActive && currentStep && !currentStep.choices) {
+    if (wizardActive && currentStep && !currentStep.choices && !isParsing) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [currentStep, wizardActive]);
+  }, [currentStep, wizardActive, isParsing]);
 
   function startWizard() {
     const initial: ChatMsg[] = [
@@ -646,6 +842,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     setPhase(0);
     setCurrentInput('');
     setConsolidateError('');
+    setIsParsing(false);
     setWizardActive(true);
   }
 
@@ -682,9 +879,24 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     }
   }
 
+  /* ── Apply result helper ── */
+
+  function applyResult(result: NextResult, baseMessages: ChatMsg[]) {
+    const msgs = [...baseMessages];
+    for (const t of result.transitions) msgs.push({ role: 'scryve', text: t });
+    if (result.step) msgs.push({ role: 'scryve', text: result.step.question });
+    setMessages(msgs);
+    setWizardData(result.data);
+    setPhase(result.phase);
+    setCurrentStep(result.step);
+    if (!result.step) {
+      consolidate(result.data);
+    }
+  }
+
   /* ── Submit handler ── */
 
-  function handleSubmit(answerOverride?: string) {
+  async function handleSubmit(answerOverride?: string) {
     const answer = (answerOverride || currentInput).trim();
     if (!answer || !currentStep) return;
 
@@ -701,30 +913,55 @@ export default function SummarySection({ projectId }: { projectId: string }) {
       return;
     }
 
-    // Normal flow
+    // Show user message immediately
     const newMessages: ChatMsg[] = [...messages, { role: 'user', text: answer }];
-    const result = processAnswer(currentStep.id, answer, wizardData);
+    setMessages(newMessages);
+    setCurrentInput('');
 
-    setWizardData(result.data);
-    setPhase(result.phase);
-
-    for (const t of result.transitions) {
-      newMessages.push({ role: 'scryve', text: t });
-    }
-
-    if (result.step) {
-      newMessages.push({ role: 'scryve', text: result.step.question });
-      setCurrentStep(result.step);
-    } else {
-      setCurrentStep(null);
-      setMessages(newMessages);
-      setCurrentInput('');
-      consolidate(result.data);
+    // Button choices: process directly (no AI parsing)
+    if (currentStep.choices) {
+      applyResult(processAnswer(currentStep.id, answer, wizardData), newMessages);
       return;
     }
 
-    setMessages(newMessages);
-    setCurrentInput('');
+    // Free-text: determine if we need AI parsing
+    const needsAIParse = NAME_STEPS.has(currentStep.id);
+
+    if (needsAIParse) {
+      // Use DeepSeek to parse name-step answers
+      setIsParsing(true);
+      try {
+        const res = await fetch('/api/scryve/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stepId: currentStep.id, question: currentStep.question, answer }),
+        });
+        const parsed: ParsedResponse = await res.json();
+
+        let result: NextResult;
+        if (parsed.intent === 'skip') {
+          result = processAnswer(currentStep.id, '__SKIP__', wizardData);
+        } else if (parsed.name && parsed.role) {
+          result = processAnswer(currentStep.id, parsed.name, wizardData, parsed.role);
+        } else {
+          const clean = parsed.name || parsed.value || answer;
+          result = processAnswer(currentStep.id, clean, wizardData);
+        }
+        applyResult(result, newMessages);
+      } catch {
+        // Fallback to raw answer on error
+        applyResult(processAnswer(currentStep.id, answer, wizardData), newMessages);
+      } finally {
+        setIsParsing(false);
+      }
+    } else {
+      // Non-name steps: use client-side skip detection
+      if (isSkipAnswer(answer)) {
+        applyResult(processAnswer(currentStep.id, '__SKIP__', wizardData), newMessages);
+      } else {
+        applyResult(processAnswer(currentStep.id, answer, wizardData), newMessages);
+      }
+    }
   }
 
   async function consolidate(data: WizardData) {
@@ -792,7 +1029,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
                 </Fragment>
               ))}
             </div>
-            {!consolidating && (
+            {!consolidating && !isParsing && (
               <button
                 onClick={() => setWizardActive(false)}
                 className="text-xs text-muted-foreground hover:text-foreground transition"
@@ -817,6 +1054,15 @@ export default function SummarySection({ projectId }: { projectId: string }) {
             ) : (
               <UserMessage key={i}>{msg.text}</UserMessage>
             )
+          )}
+
+          {isParsing && (
+            <ScryveMessage>
+              <div className="flex items-center gap-2">
+                <SpinnerIcon className="h-4 w-4 animate-spin text-brand-400" />
+                <span>Thinking...</span>
+              </div>
+            </ScryveMessage>
           )}
 
           {consolidating && (
@@ -846,7 +1092,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         </div>
 
         {/* Input area */}
-        {!consolidating && currentStep && (
+        {!consolidating && !isParsing && currentStep && (
           <div className="border-t border-white/5 pt-4">
             {currentStep.choices ? (
               <div className="flex flex-wrap gap-3 justify-center">
