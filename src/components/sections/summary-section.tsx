@@ -89,6 +89,7 @@ interface WizardData {
   outlineBefore: string;
   outlineTurning: string;
   outlineEnding: string;
+  notes: string[];
   _temp: string;
 }
 
@@ -127,6 +128,7 @@ const INITIAL_DATA: WizardData = {
   outlineBefore: '',
   outlineTurning: '',
   outlineEnding: '',
+  notes: [],
   _temp: '',
 };
 
@@ -146,6 +148,7 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
   const d: WizardData = {
     ...data,
     characters: data.characters.map(c => ({ ...c, roles: [...c.roles] })),
+    notes: [...data.notes],
   };
 
   const n = d.protagonistName;
@@ -322,9 +325,9 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
       }
       return {
         data: d,
-        step: { id: 'scope_location', question: 'Where does this story unfold?', placeholder: 'kingdom, city, planet...' },
-        transitions: ['Great crew! I can already see some interesting dynamics. Let\'s set the stage.'],
-        phase: 1,
+        step: { id: 'checkpoint_characters', question: 'We\'ve mapped out the cast! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] },
+        transitions: [],
+        phase: 0,
       };
     }
 
@@ -337,6 +340,26 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
       d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['other'] });
       d._temp = '';
       return { data: d, step: { id: 'more_characters', question: 'Anyone else?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    /* ── Checkpoint: Characters ── */
+
+    case 'checkpoint_characters': {
+      if (answer === 'Add More') {
+        return { data: d, step: { id: 'add_info_characters', question: 'What else should I know about the characters?', placeholder: 'type anything...' }, transitions: [], phase: 0 };
+      }
+      // "Next: Scope"
+      return {
+        data: d,
+        step: { id: 'scope_location', question: 'Where does this story unfold?', placeholder: 'kingdom, city, planet...' },
+        transitions: ['Great crew! I can already see some interesting dynamics. Let\'s set the stage.'],
+        phase: 1,
+      };
+    }
+
+    case 'add_info_characters': {
+      d.notes.push(`Characters: ${answer}`);
+      return { data: d, step: { id: 'checkpoint_characters', question: 'Got it! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] }, transitions: [], phase: 0 };
     }
 
     /* ── Phase 1: Scope ── */
@@ -353,6 +376,20 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
 
     case 'scope_installments': {
       d.scopeInstallments = answer;
+      return {
+        data: d,
+        step: { id: 'checkpoint_scope', question: 'The world is taking shape! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] },
+        transitions: [],
+        phase: 1,
+      };
+    }
+
+    /* ── Checkpoint: Scope ── */
+
+    case 'checkpoint_scope': {
+      if (answer === 'Add More') {
+        return { data: d, step: { id: 'add_info_scope', question: 'What else about the world?', placeholder: 'type anything...' }, transitions: [], phase: 1 };
+      }
       const q = d.antagonistIsCharacter
         ? `What does ${d.antagonistName} want?`
         : `What does ${d.antagonistName} threaten?`;
@@ -362,6 +399,11 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
         transitions: ['Got it. Now for the juicy part.'],
         phase: 2,
       };
+    }
+
+    case 'add_info_scope': {
+      d.notes.push(`Scope: ${answer}`);
+      return { data: d, step: { id: 'checkpoint_scope', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] }, transitions: [], phase: 1 };
     }
 
     /* ── Phase 2: Conflict ── */
@@ -375,10 +417,29 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
       d.conflictStakes = answer;
       return {
         data: d,
+        step: { id: 'checkpoint_conflict', question: 'The stakes are clear! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] },
+        transitions: [],
+        phase: 2,
+      };
+    }
+
+    /* ── Checkpoint: Conflict ── */
+
+    case 'checkpoint_conflict': {
+      if (answer === 'Add More') {
+        return { data: d, step: { id: 'add_info_conflict', question: 'What else about the conflict?', placeholder: 'type anything...' }, transitions: [], phase: 2 };
+      }
+      return {
+        data: d,
         step: { id: 'outline_before', question: `What is ${n}'s life like before the conflict?`, placeholder: 'peaceful, chaotic, mundane...' },
         transitions: ['The tension is real! Let\'s sketch the big picture.'],
         phase: 3,
       };
+    }
+
+    case 'add_info_conflict': {
+      d.notes.push(`Conflict: ${answer}`);
+      return { data: d, step: { id: 'checkpoint_conflict', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] }, transitions: [], phase: 2 };
     }
 
     /* ── Phase 3: Outline ── */
@@ -397,10 +458,30 @@ function processAnswer(stepId: string, answer: string, data: WizardData): NextRe
       d.outlineEnding = answer;
       return {
         data: d,
+        step: { id: 'checkpoint_outline', question: 'The plot is mapped! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] },
+        transitions: [],
+        phase: 3,
+      };
+    }
+
+    /* ── Checkpoint: Outline ── */
+
+    case 'checkpoint_outline': {
+      if (answer === 'Add More') {
+        return { data: d, step: { id: 'add_info_outline', question: 'What else about the plot?', placeholder: 'type anything...' }, transitions: [], phase: 3 };
+      }
+      // "Finish"
+      return {
+        data: d,
         step: null,
-        transitions: ['I love where this is going! Give me a moment to weave it all together...'],
+        transitions: ['Perfect! Let me weave the complete story together...'],
         phase: 4,
       };
+    }
+
+    case 'add_info_outline': {
+      d.notes.push(`Outline: ${answer}`);
+      return { data: d, step: { id: 'checkpoint_outline', question: 'Noted! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] }, transitions: [], phase: 3 };
     }
 
     default:
@@ -561,17 +642,66 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     ];
     setMessages(initial);
     setCurrentStep({ id: 'protagonist_name', question: 'What\'s your protagonist\'s name?', placeholder: 'a name' });
-    setWizardData({ ...INITIAL_DATA, characters: [] });
+    setWizardData({ ...INITIAL_DATA, characters: [], notes: [] });
     setPhase(0);
     setCurrentInput('');
     setConsolidateError('');
     setWizardActive(true);
   }
 
+  /* ── Synopsis Preview ── */
+
+  async function generatePreview(currentMsgs: ChatMsg[], checkpointQuestion: string, data: WizardData) {
+    setConsolidating(true);
+    try {
+      const { _temp, ...cleanData } = data;
+      const res = await fetch('/api/scryve/consolidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, wizardData: cleanData, previewOnly: true }),
+      });
+      const result = await res.json();
+      if (res.ok && result.sections) {
+        const synopsis = result.sections['summary.synopsis'] || 'Not enough information yet to build a synopsis.';
+        setMessages([
+          ...currentMsgs,
+          { role: 'scryve', text: synopsis },
+          { role: 'scryve', text: checkpointQuestion },
+        ]);
+      } else {
+        throw new Error(result.error || 'Preview failed');
+      }
+    } catch (err) {
+      setMessages([
+        ...currentMsgs,
+        { role: 'scryve', text: `Hmm, couldn't generate a preview right now. ${err instanceof Error ? err.message : ''}` },
+        { role: 'scryve', text: checkpointQuestion },
+      ]);
+    } finally {
+      setConsolidating(false);
+    }
+  }
+
+  /* ── Submit handler ── */
+
   function handleSubmit(answerOverride?: string) {
     const answer = (answerOverride || currentInput).trim();
     if (!answer || !currentStep) return;
 
+    // Handle "View Synopsis" at checkpoints
+    if (answer === 'View Synopsis') {
+      const newMsgs: ChatMsg[] = [
+        ...messages,
+        { role: 'user', text: answer },
+        { role: 'scryve', text: 'Let me put together what we have so far...' },
+      ];
+      setMessages(newMsgs);
+      setCurrentInput('');
+      generatePreview(newMsgs, currentStep.question, wizardData);
+      return;
+    }
+
+    // Normal flow
     const newMessages: ChatMsg[] = [...messages, { role: 'user', text: answer }];
     const result = processAnswer(currentStep.id, answer, wizardData);
 
@@ -719,7 +849,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         {!consolidating && currentStep && (
           <div className="border-t border-white/5 pt-4">
             {currentStep.choices ? (
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-wrap gap-3 justify-center">
                 {currentStep.choices.map((choice) => (
                   <button
                     key={choice}

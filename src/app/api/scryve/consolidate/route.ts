@@ -27,6 +27,7 @@ interface WizardData {
   outlineBefore: string;
   outlineTurning: string;
   outlineEnding: string;
+  notes: string[];
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -64,6 +65,7 @@ Rules:
 - Fill obvious gaps with sensible inferences (mark with [Suggestion: ...])
 - Keep it concise — this is a working document, not a pitch
 - Use he/him/his and she/her correctly based on character genders
+- If data is incomplete (preview mode), work with what you have and note gaps
 
 Respond ONLY with valid JSON:
 {
@@ -88,40 +90,44 @@ function buildUserMessage(project: { title: string; projectType: string }, data:
     ? `${data.antagonistName} (${data.antagonistGender}, character)`
     : `${data.antagonistName} (force/concept)`;
 
+  const notesSection = data.notes && data.notes.length > 0
+    ? `\nADDITIONAL NOTES:\n${data.notes.map(n => `- ${n}`).join('\n')}`
+    : '';
+
   return `Project: "${project.title}" (${project.projectType})
 
 PROTAGONIST:
-- Name: ${data.protagonistName}
-- Gender: ${data.protagonistGender}
-- Occupation: ${data.protagonistOccupation}
-- Location: ${data.protagonistLocation}
+- Name: ${data.protagonistName || '(not yet provided)'}
+- Gender: ${data.protagonistGender || '(not yet provided)'}
+- Occupation: ${data.protagonistOccupation || '(not yet provided)'}
+- Location: ${data.protagonistLocation || '(not yet provided)'}
 
 CHARACTERS AND RELATIONSHIPS:
-${characterLines || '(none specified)'}
+${characterLines || '(none specified yet)'}
 
-ANTAGONIST: ${antagonistType}
+ANTAGONIST: ${data.antagonistName ? antagonistType : '(not yet provided)'}
 
 SCOPE:
-- Setting: ${data.scopeLocation}
-- Time Period: ${data.scopeTime}
-- Format: ${data.scopeInstallments}
+- Setting: ${data.scopeLocation || '(not yet provided)'}
+- Time Period: ${data.scopeTime || '(not yet provided)'}
+- Format: ${data.scopeInstallments || '(not yet provided)'}
 
 CONFLICT:
-- Antagonist wants/threatens: ${data.conflictWant}
-- Protagonist stands to lose: ${data.conflictStakes}
+- Antagonist wants/threatens: ${data.conflictWant || '(not yet provided)'}
+- Protagonist stands to lose: ${data.conflictStakes || '(not yet provided)'}
 
 OUTLINE:
-- Before the conflict: ${data.outlineBefore}
-- Turning point: ${data.outlineTurning}
-- Ending: ${data.outlineEnding}
+- Before the conflict: ${data.outlineBefore || '(not yet provided)'}
+- Turning point: ${data.outlineTurning || '(not yet provided)'}
+- Ending: ${data.outlineEnding || '(not yet provided)'}${notesSection}
 
-Consolidate these into 5 structured Summary sections. Pay special attention to Synopsis — weave everything into a compelling narrative summary that captures the heart of this story.`;
+Consolidate these into 5 structured Summary sections. For any section where data is not yet provided, write what you can from available information and note what's missing.`;
 }
 
 export async function POST(request: Request) {
   const user = await getTestUser();
   const body = await request.json();
-  const { projectId, wizardData } = body;
+  const { projectId, wizardData, previewOnly } = body;
 
   if (!projectId || !wizardData) {
     return NextResponse.json({ error: 'projectId and wizardData are required' }, { status: 400 });
@@ -163,15 +169,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const upserts = Object.entries(sections).map(([key, content]) =>
-      prisma.projectSection.upsert({
-        where: { projectId_key: { projectId, key } },
-        update: { content: String(content) },
-        create: { projectId, key, content: String(content) },
-      })
-    );
-
-    await Promise.all(upserts);
+    // Only save to DB on final consolidation, not previews
+    if (!previewOnly) {
+      const upserts = Object.entries(sections).map(([key, content]) =>
+        prisma.projectSection.upsert({
+          where: { projectId_key: { projectId, key } },
+          update: { content: String(content) },
+          create: { projectId, key, content: String(content) },
+        })
+      );
+      await Promise.all(upserts);
+    }
 
     return NextResponse.json({ sections, usage: result.usage });
   } catch (error) {
