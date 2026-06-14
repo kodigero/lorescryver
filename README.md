@@ -6,7 +6,7 @@ A commercial SaaS web authoring platform for fiction writers — from concept to
 
 - **Framework:** Next.js 15 + TypeScript
 - **Database:** PostgreSQL + Prisma ORM
-- **Auth:** NextAuth.js
+- **Auth:** Signed cookie sessions
 - **Editor:** Tiptap (ProseMirror)
 - **AI:** Vercel AI SDK
 - **Styling:** Tailwind CSS + shadcn/ui
@@ -27,8 +27,14 @@ npm install
 npm run dev
 ```
 
+For local Docker development, set `DB_PASSWORD` in `.env`; Compose fails fast if it is missing.
+
 ## Deployment
 
 ```bash
 docker compose up -d
 ```
+
+## Current Handoff
+
+See [docs/CLAUDE_COWORK_TAKEOVER.md](docs/CLAUDE_COWORK_TAKEOVER.md) for the current PR status, production secret assumptions, validation results, and recommended next work.

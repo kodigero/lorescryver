@@ -6,6 +6,20 @@
 
 ---
 
+## Current Remediation Status
+
+The audit remediation work is implemented on branch `codex/audit-remediation-hardening` and opened as draft PR #1:
+
+https://github.com/kodigero/lorescryver/pull/1
+
+For takeover context, production secret assumptions, validation results, and remaining next steps, see:
+
+`docs/CLAUDE_COWORK_TAKEOVER.md`
+
+The issue list below is the original audit baseline. It is intentionally preserved for historical context and should be read together with the takeover document.
+
+---
+
 ## Summary
 
 | Severity | Count | Description |
