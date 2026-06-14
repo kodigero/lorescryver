@@ -21,6 +21,16 @@ function SparklesIcon({ className }: { className?: string }) {
   );
 }
 
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
 function BookIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -253,7 +263,7 @@ export default function LandingPage() {
             <a href="#features" className="text-sm text-muted-foreground transition hover:text-foreground">Features</a>
             <a href="#pricing" className="text-sm text-muted-foreground transition hover:text-foreground">Pricing</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <Link
               href="/login"
               className="text-sm text-muted-foreground transition hover:text-foreground"
@@ -267,6 +277,19 @@ export default function LandingPage() {
               Get Started
             </Link>
           </div>
+          <details className="group relative md:hidden">
+            <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition hover:bg-white/10 hover:text-foreground [&::-webkit-details-marker]:hidden">
+              <MenuIcon className="h-4 w-4" />
+            </summary>
+            <div className="absolute right-0 top-11 w-56 rounded-xl border border-white/10 bg-[hsl(240,6%,7%)] p-2 shadow-2xl">
+              <a href="#pipeline" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Pipeline</a>
+              <a href="#features" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Features</a>
+              <a href="#pricing" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Pricing</a>
+              <div className="my-2 border-t border-white/10" />
+              <Link href="/login" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Sign in</Link>
+              <Link href="/register" className="mt-1 flex h-9 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition hover:bg-brand-700">Get Started</Link>
+            </div>
+          </details>
         </div>
       </nav>
 

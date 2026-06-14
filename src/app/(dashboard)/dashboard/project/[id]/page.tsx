@@ -212,7 +212,7 @@ interface Project {
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.id as string;
-  const { activeDomain, setActiveDomain, setDeliveryLabel, setIsInsideProject } = useDomain();
+  const { activeDomain, setDeliveryLabel, setIsInsideProject } = useDomain();
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);

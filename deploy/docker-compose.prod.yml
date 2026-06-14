@@ -12,6 +12,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
     networks:
       - internal
 
@@ -27,6 +38,12 @@ services:
       - caddy_config:/config
     depends_on:
       - app
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
     networks:
       - internal
 
@@ -35,7 +52,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: lorescryver
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: lorescryver
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -44,6 +61,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
     networks:
       - internal
 
@@ -55,11 +78,43 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    networks:
+      - internal
+
+  db_backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - pgbackups:/backups
+    command: >
+      sh -c 'while true; do
+        pg_dump -h db -U lorescryver -d lorescryver -Fc -f /backups/lorescryver-$$(date +%Y%m%d-%H%M%S).dump;
+        find /backups -type f -name "*.dump" -mtime +14 -delete;
+        sleep 86400;
+      done'
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
     networks:
       - internal
 
 volumes:
   pgdata:
+  pgbackups:
   caddy_data:
   caddy_config:
 

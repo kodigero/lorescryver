@@ -14,9 +14,8 @@ echo ">>> Creating deploy user..."
 useradd -m -s /bin/bash -G docker deploy
 mkdir -p /home/deploy/.ssh
 chmod 700 /home/deploy/.ssh
-cat > /home/deploy/.ssh/authorized_keys << 'EOF'
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExom+4S+txSbs3wOThkQk0sNcpFpIHBP3tBZssOK6ka lorescryver-deploy
-EOF
+: "${DEPLOY_SSH_PUBLIC_KEY:?DEPLOY_SSH_PUBLIC_KEY is required}"
+printf '%s\n' "$DEPLOY_SSH_PUBLIC_KEY" > /home/deploy/.ssh/authorized_keys
 chmod 600 /home/deploy/.ssh/authorized_keys
 chown -R deploy:deploy /home/deploy/.ssh
 echo ">>> Setting up project directory..."

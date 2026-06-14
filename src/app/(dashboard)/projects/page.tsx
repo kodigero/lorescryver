@@ -1,3 +1,5 @@
-export default function ProjectsPage() {
-  return <div>Projects list</div>;
+import { redirect } from 'next/navigation';
+
+export default function ProjectsRedirectPage() {
+  redirect('/dashboard');
 }

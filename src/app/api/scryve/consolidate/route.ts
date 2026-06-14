@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getTestUser } from '@/lib/test-user';
+import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
+import { consolidateRequestSchema, validationError } from '@/lib/validation';
 
 interface CharEntry {
   name: string;
@@ -40,6 +41,14 @@ const ROLE_LABELS: Record<string, string> = {
   antagonist_ally: 'antagonist\'s ally',
   other: 'supporting character',
 };
+
+const ALLOWED_SECTION_KEYS = new Set([
+  'summary.main_characters',
+  'summary.scope',
+  'summary.main_conflict',
+  'summary.outline_overview',
+  'summary.synopsis',
+]);
 
 const SYSTEM_PROMPT = `You are Scryve, the AI narrative assistant for LoreScryver — a professional authoring platform for storytellers.
 
@@ -125,28 +134,35 @@ Consolidate these into 5 structured Summary sections. For any section where data
 }
 
 export async function POST(request: Request) {
-  const user = await getTestUser();
-  const body = await request.json();
-  const { projectId, wizardData, previewOnly } = body;
-
-  if (!projectId || !wizardData) {
-    return NextResponse.json({ error: 'projectId and wizardData are required' }, { status: 400 });
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId: user.id },
-  });
-
-  if (!project) {
-    return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+  const parsed = consolidateRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(validationError(), { status: 400 });
   }
-
-  const userMessage = buildUserMessage(
-    { title: project.title, projectType: project.projectType },
-    wizardData as WizardData
-  );
+  const { projectId, wizardData, previewOnly } = parsed.data as unknown as {
+    projectId: string;
+    wizardData: WizardData;
+    previewOnly: boolean;
+  };
 
   try {
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: user.id },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    const userMessage = buildUserMessage(
+      { title: project.title, projectType: project.projectType },
+      wizardData
+    );
+
     const result = await chatCompletion(
       [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -161,10 +177,24 @@ export async function POST(request: Request) {
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       }
-      sections = JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('AI response was not an object');
+      }
+
+      sections = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (ALLOWED_SECTION_KEYS.has(key) && typeof value === 'string') {
+          sections[key] = value;
+        }
+      }
+
+      if (Object.keys(sections).length === 0) {
+        throw new Error('AI response did not include allowed section keys');
+      }
     } catch {
       return NextResponse.json(
-        { error: 'Failed to parse AI response', raw: result.content },
+        { error: 'Failed to parse AI response' },
         { status: 500 }
       );
     }
@@ -185,7 +215,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Scryve consolidation error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'AI processing failed' },
+      { error: 'AI processing failed' },
       { status: 500 }
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import ScryvePanel from '@/components/scryve-panel';
 import { DomainProvider, useDomain } from '@/contexts/domain-context';
@@ -188,8 +188,10 @@ function DomainToggle() {
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isInsideProject } = useDomain();
   const [isDark, setIsDark] = useState(true);
+  const [user, setUser] = useState<{ name: string | null; email: string; plan: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
@@ -198,6 +200,20 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    setIsDark(storedTheme ? storedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((body) => {
+        if (body?.user) setUser(body.user);
+      })
+      .catch(() => {});
+  }, []);
 
   // Focus search input when opened
   useEffect(() => {
@@ -214,6 +230,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove('dark');
     }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   // Close dropdowns when clicking outside
@@ -255,6 +272,12 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const dropdownBorder = isDark ? 'border-white/10' : 'border-gray-200';
   const dropdownHover = isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50';
   const dropdownDivider = isDark ? 'border-white/5' : 'border-gray-100';
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  }
 
   return (
     <div className={`flex h-screen flex-col overflow-hidden ${isDark ? 'bg-[hsl(240,10%,3.9%)] text-[hsl(0,0%,98%)]' : 'bg-white text-[hsl(240,10%,3.9%)]'}`}>
@@ -404,10 +427,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
               <div className={`absolute right-0 top-full mt-2 w-56 rounded-xl border ${dropdownBorder} ${dropdownBg} shadow-2xl z-50`}>
                 {/* User info */}
                 <div className={`border-b ${dropdownDivider} px-4 py-3`}>
-                  <p className="text-sm font-medium">Test User</p>
-                  <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-500'} mt-0.5`}>test@lorescryver.com</p>
+                  <p className="text-sm font-medium">{user?.name || 'Writer'}</p>
+                  <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-500'} mt-0.5`}>{user?.email || 'Signed in'}</p>
                   <span className="mt-1.5 inline-block rounded-full bg-brand-600/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-400">
-                    Free Plan
+                    {user?.plan || 'FREE'} Plan
                   </span>
                 </div>
 
@@ -449,13 +472,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 {/* Sign out */}
                 <div className={`border-t ${dropdownDivider} py-1.5`}>
-                  <Link
-                    href="/"
+                  <button
+                    type="button"
+                    onClick={handleLogout}
                     className={`flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:text-red-300 ${dropdownHover} transition`}
                   >
                     <LogOutIcon className="h-4 w-4" />
                     Sign out
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}
