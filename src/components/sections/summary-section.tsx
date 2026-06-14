@@ -59,7 +59,6 @@ interface WizardStep {
   fieldKey: string;
   question: string;
   placeholder: string;
-  rows: number;
 }
 
 const wizardSteps: WizardStep[] = [
@@ -68,91 +67,78 @@ const wizardSteps: WizardStep[] = [
     fieldKey: 'protagonistName',
     question: "What's your main character's name?",
     placeholder: 'Kaelith',
-    rows: 1,
   },
   {
     key: 'protagonistDesc',
     fieldKey: 'protagonistDesc',
     question: "In a few words, who are they?",
     placeholder: 'A tired detective with a secret',
-    rows: 1,
   },
   {
     key: 'protagonistDesire',
     fieldKey: 'protagonistDesire',
     question: "What do they want more than anything?",
     placeholder: 'To find their missing sister',
-    rows: 1,
   },
   {
     key: 'setting',
     fieldKey: 'setting',
     question: "Where does the story take place?",
     placeholder: 'A rain-soaked port city',
-    rows: 1,
   },
   {
     key: 'timePeriod',
     fieldKey: 'timePeriod',
     question: "When does it happen?",
     placeholder: 'Modern day, medieval, far future...',
-    rows: 1,
   },
   {
     key: 'genre',
     fieldKey: 'genre',
     question: "What genre is it?",
     placeholder: 'Dark fantasy, sci-fi thriller, romance...',
-    rows: 1,
   },
   {
     key: 'tone',
     fieldKey: 'tone',
     question: "How does the story feel? One or two words.",
     placeholder: 'Tense, hopeful, eerie...',
-    rows: 1,
   },
   {
     key: 'worldScale',
     fieldKey: 'worldScale',
     question: "How big is the world? A single room, a city, a whole planet?",
     placeholder: 'A sprawling continent',
-    rows: 1,
   },
   {
     key: 'incitingIncident',
     fieldKey: 'incitingIncident',
     question: "What event kicks the story off?",
     placeholder: 'A letter arrives with a cryptic warning',
-    rows: 2,
   },
   {
     key: 'obstacle',
     fieldKey: 'obstacle',
     question: "What's standing in your character's way?",
     placeholder: 'A corrupt guild controls the only route forward',
-    rows: 2,
   },
   {
     key: 'supportingCast',
     fieldKey: 'supportingCast',
     question: "Any other important characters? Just names and a word or two each.",
     placeholder: 'Renn — loyal friend, Vara — rival spy',
-    rows: 2,
   },
   {
     key: 'turningPoint',
     fieldKey: 'turningPoint',
     question: "What's a major turning point in the story?",
     placeholder: 'She discovers the villain is her mentor',
-    rows: 2,
   },
   {
     key: 'ending',
     fieldKey: 'ending',
     question: "Last one — how does it end? Even a rough idea works.",
     placeholder: 'She wins but loses someone she loves',
-    rows: 2,
   },
 ];
 
@@ -302,7 +288,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   const [consolidating, setConsolidating] = useState(false);
   const [consolidateError, setConsolidateError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load existing section data
   useEffect(() => {
@@ -482,7 +468,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
           <div className="border-t border-white/5 pt-4">
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <input
-                ref={inputRef as React.RefObject<HTMLInputElement>}
+                ref={inputRef}
                 type="text"
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
