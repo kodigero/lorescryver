@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getCurrentUser } from '@/lib/auth';
 
 /* ── Icon components (inline SVG to avoid extra deps) ───────────────── */
 
@@ -106,6 +107,17 @@ function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
+/* ── Helper: user initials ──────────────────────────────────────────── */
+
+function getInitials(name: string | null | undefined, email: string): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return email.substring(0, 2).toUpperCase();
+}
+
 /* ── Data ────────────────────────────────────────────────────────────── */
 
 const mediaTypes = [
@@ -123,7 +135,7 @@ const pipeline = [
   {
     step: '01',
     title: 'Ideate & Worldbuild',
-    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you’re writing a novel, a game script, or a screenplay.',
+    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you're writing a novel, a game script, or a screenplay.',
     icon: SparklesIcon,
   },
   {
@@ -240,7 +252,11 @@ const plans = [
 
 /* ── Page ────────────────────────────────────────────────────────────── */
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const user = await getCurrentUser();
+  const isLoggedIn = !!user;
+  const initials = user ? getInitials(user.name, user.email) : '';
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background ambient glow */}
@@ -263,20 +279,44 @@ export default function LandingPage() {
             <a href="#features" className="text-sm text-muted-foreground transition hover:text-foreground">Features</a>
             <a href="#pricing" className="text-sm text-muted-foreground transition hover:text-foreground">Pricing</a>
           </div>
+
+          {/* Desktop auth area */}
           <div className="hidden items-center gap-3 md:flex">
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground transition hover:text-foreground"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex h-9 items-center rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition hover:bg-brand-700"
-            >
-              Get Started
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-9 items-center rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition hover:bg-brand-700"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white transition hover:bg-brand-700"
+                  title={user.name || user.email}
+                >
+                  {initials}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm text-muted-foreground transition hover:text-foreground"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex h-9 items-center rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition hover:bg-brand-700"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
+
+          {/* Mobile menu */}
           <details className="group relative md:hidden">
             <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition hover:bg-white/10 hover:text-foreground [&::-webkit-details-marker]:hidden">
               <MenuIcon className="h-4 w-4" />
@@ -286,8 +326,22 @@ export default function LandingPage() {
               <a href="#features" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Features</a>
               <a href="#pricing" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Pricing</a>
               <div className="my-2 border-t border-white/10" />
-              <Link href="/login" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Sign in</Link>
-              <Link href="/register" className="mt-1 flex h-9 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition hover:bg-brand-700">Get Started</Link>
+              {isLoggedIn ? (
+                <>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                      {initials}
+                    </span>
+                    <span className="truncate text-sm text-muted-foreground">{user.name || user.email}</span>
+                  </div>
+                  <Link href="/dashboard" className="mt-1 flex h-9 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition hover:bg-brand-700">Dashboard</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/5 hover:text-foreground">Sign in</Link>
+                  <Link href="/register" className="mt-1 flex h-9 items-center justify-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition hover:bg-brand-700">Get Started</Link>
+                </>
+              )}
             </div>
           </details>
         </div>
@@ -325,13 +379,23 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/register"
-              className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
-            >
-              Start Creating &mdash; It&apos;s Free
-              <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
+              >
+                Go to Dashboard
+                <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
+              >
+                Start Creating &mdash; It&apos;s Free
+                <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+            )}
             <a
               href="#pipeline"
               className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 text-base font-medium text-foreground transition hover:bg-white/10"
@@ -554,14 +618,14 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/register"
+                  href={isLoggedIn ? '/dashboard' : '/register'}
                   className={`inline-flex h-11 items-center justify-center rounded-xl text-sm font-semibold transition ${
                     plan.featured
                       ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/25 hover:bg-brand-700'
                       : 'border border-white/10 bg-white/5 text-foreground hover:bg-white/10'
                   }`}
                 >
-                  {plan.cta}
+                  {isLoggedIn ? 'Go to Dashboard' : plan.cta}
                 </Link>
               </div>
             ))}
@@ -582,10 +646,10 @@ export default function LandingPage() {
           </p>
           <div className="mt-10">
             <Link
-              href="/register"
+              href={isLoggedIn ? '/dashboard' : '/register'}
               className="group inline-flex h-12 items-center gap-2 rounded-xl bg-brand-600 px-8 text-base font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-brand-600/40"
             >
-              Get Started Free
+              {isLoggedIn ? 'Go to Dashboard' : 'Get Started Free'}
               <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
           </div>
