@@ -55,7 +55,7 @@ jobs:
             grep -q '^AUTH_SECRET=' .env && sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=${{ secrets.AUTH_SECRET }}|" .env || echo "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" >> .env
 
             docker compose down 2>/dev/null || true
-            docker compose -f deploy/docker-compose.prod.yml build --no-cache app
-            docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env build --no-cache app
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --force-recreate
             docker image prune -f
             echo "Deployed successfully!"
