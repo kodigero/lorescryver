@@ -155,8 +155,9 @@ export default function ScryvePanel() {
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/30 transition-all hover:bg-brand-700 hover:shadow-xl hover:shadow-brand-600/40 hover:scale-105 active:scale-95"
           title="Open Scryve"
+          aria-label="Open Scryve"
         >
-          <ScryveIcon className="h-5.5 w-5.5" />
+          <ScryveIcon className="h-6 w-6" />
         </button>
       )}
 
@@ -180,6 +181,7 @@ export default function ScryvePanel() {
                 onClick={() => setIsOpen(false)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-white transition"
                 title="Minimize"
+                aria-label="Minimize Scryve"
               >
                 <MinimizeIcon className="h-3.5 w-3.5" />
               </button>
@@ -187,6 +189,7 @@ export default function ScryvePanel() {
                 onClick={() => setIsOpen(false)}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-white transition"
                 title="Close"
+                aria-label="Close Scryve"
               >
                 <XIcon className="h-3.5 w-3.5" />
               </button>
@@ -194,7 +197,7 @@ export default function ScryvePanel() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="flex-1 overflow-y-auto px-4 py-4" role="log" aria-live="polite">
             {messages.length === 0 ? (
               /* Welcome state */
               <div className="flex h-full flex-col items-center justify-center text-center">
@@ -203,7 +206,7 @@ export default function ScryvePanel() {
                 </div>
                 <h4 className="text-sm font-bold text-white">How can I help?</h4>
                 <p className="mt-2 max-w-[260px] text-xs leading-relaxed text-muted-foreground">
-                  I'm Scryve, your narrative AI assistant. Ask me anything about your story, world, characters, or writing process.
+                  I&apos;m Scryve, your narrative AI assistant. Ask me anything about your story, world, characters, or writing process.
                 </p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {['Brainstorm ideas', 'Build a character', 'Outline a chapter'].map((suggestion) => (
@@ -273,6 +276,7 @@ export default function ScryvePanel() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Scryve anything..."
+                aria-label="Ask Scryve"
                 rows={1}
                 className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/30 outline-none max-h-24"
                 style={{ minHeight: '20px' }}
@@ -285,6 +289,7 @@ export default function ScryvePanel() {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
+                aria-label="Send message"
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-30 disabled:hover:bg-brand-600"
               >
                 <SendIcon className="h-3.5 w-3.5" />

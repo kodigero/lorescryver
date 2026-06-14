@@ -4,6 +4,7 @@
  */
 
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
+const DEFAULT_TIMEOUT_MS = 30000;
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -39,19 +40,23 @@ export async function chatCompletion(
     throw new Error('DEEPSEEK_API_KEY is not set');
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
   const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
     method: 'POST',
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
       messages,
       temperature: options?.temperature ?? 0.7,
       max_tokens: options?.maxTokens ?? 4096,
     }),
-  });
+  }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
     const error = await response.text();

@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
+import { assistRequestSchema, validationError } from '@/lib/validation';
 
 export async function POST(req: Request) {
   try {
-    const { messages, context } = await req.json();
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const parsed = assistRequestSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(validationError(), { status: 400 });
+    }
+    const { messages, context } = parsed.data;
 
     const choicesInfo = context.choices
       ? `\nAVAILABLE CHOICES: ${context.choices.join(', ')}. The locked-in answer MUST be one of these exact values.`
@@ -34,7 +45,7 @@ YOUR RULES:
     const result = await chatCompletion(
       [
         { role: 'system', content: systemPrompt },
-        ...messages,
+        ...messages.map((message) => ({ role: message.role, content: message.content })),
       ],
       { temperature: 0.7, maxTokens: 300 }
     );

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
+import { parseRequestSchema, validationError } from '@/lib/validation';
 
 const NAME_STEPS = new Set([
   'important_person', 'role_model', 'confidant', 'anchor', 'enemy',
@@ -8,11 +10,16 @@ const NAME_STEPS = new Set([
 
 export async function POST(req: Request) {
   try {
-    const { stepId, question, answer } = await req.json();
-
-    if (!stepId || !answer) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const parsed = parseRequestSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(validationError(), { status: 400 });
+    }
+    const { stepId, question, answer } = parsed.data;
 
     const isNameStep = NAME_STEPS.has(stepId);
 

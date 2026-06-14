@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -134,6 +133,7 @@ function CreateProjectModal({
   const [title, setTitle] = useState('');
   const [projectType, setProjectType] = useState('novel');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const modalRef = useRef<HTMLDivElement>(null);
 
   if (!open) return null;
@@ -142,19 +142,25 @@ function CreateProjectModal({
     e.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title.trim(), projectType }),
       });
-      if (res.ok) {
-        const project = await res.json();
-        onCreated(project);
-        setTitle('');
-        setProjectType('novel');
-        onClose();
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error || 'Project could not be created');
+        return;
       }
+      const project = await res.json();
+      onCreated(project);
+      setTitle('');
+      setProjectType('novel');
+      onClose();
+    } catch {
+      setError('Project could not be created');
     } finally {
       setLoading(false);
     }
@@ -211,6 +217,12 @@ function CreateProjectModal({
             </div>
           </div>
 
+          {error && (
+            <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {error}
+            </p>
+          )}
+
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
@@ -243,17 +255,25 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [error, setError] = useState('');
 
   // Fetch projects on mount
-  useState(() => {
+  useEffect(() => {
+    setError('');
     fetch('/api/projects')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load projects');
+        return r.json();
+      })
       .then((data) => {
         setProjects(data);
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
-  });
+      .catch(() => {
+        setError('Projects could not be loaded');
+        setLoaded(true);
+      });
+  }, []);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -289,11 +309,16 @@ export default function DashboardPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this project? This cannot be undone.')) return;
-    const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    setError('');
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
       setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      setError('Project could not be deleted');
+    } finally {
+      setMenuOpen(null);
     }
-    setMenuOpen(null);
   }
 
   function startEdit(project: Project) {
@@ -304,16 +329,20 @@ export default function DashboardPage() {
 
   async function saveEdit(id: string) {
     if (!editTitle.trim()) return;
-    const res = await fetch(`/api/projects/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: editTitle.trim() }),
-    });
-    if (res.ok) {
+    setError('');
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: editTitle.trim() }),
+      });
+      if (!res.ok) throw new Error('Update failed');
       const updated = await res.json();
       setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      setEditingId(null);
+    } catch {
+      setError('Project could not be renamed');
     }
-    setEditingId(null);
   }
 
   return (
@@ -339,6 +368,12 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="p-6 md:p-8">
+        {error && (
+          <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </p>
+        )}
+
         {!loaded ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (

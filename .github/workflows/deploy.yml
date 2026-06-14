@@ -11,10 +11,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: 138.201.119.11
+          host: ${{ secrets.DEPLOY_HOST }}
           username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
@@ -30,8 +51,9 @@ jobs:
 
             # Inject secrets into .env
             grep -q '^DEEPSEEK_API_KEY=' .env && sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env || echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+            grep -q '^DB_PASSWORD=' .env && sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|" .env || echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            grep -q '^AUTH_SECRET=' .env && sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=${{ secrets.AUTH_SECRET }}|" .env || echo "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" >> .env
 
             docker compose -f deploy/docker-compose.prod.yml build
             docker compose -f deploy/docker-compose.prod.yml up -d
-            docker compose -f deploy/docker-compose.prod.yml exec -T app npx prisma migrate deploy || true
             echo "Deployed successfully!"

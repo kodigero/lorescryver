@@ -1,54 +1,67 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getTestUser } from '@/lib/test-user';
+import { getCurrentUser } from '@/lib/auth';
+import { createProjectSchema, validationError } from '@/lib/validation';
 
 // GET /api/projects — list all projects for the current user
 export async function GET() {
-  const user = await getTestUser();
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-  const projects = await prisma.project.findMany({
-    where: { userId: user.id },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      id: true,
-      title: true,
-      projectType: true,
-      status: true,
-      wordCountGoal: true,
-      updatedAt: true,
-    },
-  });
+  try {
+    const projects = await prisma.project.findMany({
+      where: { userId: user.id },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        projectType: true,
+        status: true,
+        wordCountGoal: true,
+        updatedAt: true,
+      },
+    });
 
-  return NextResponse.json(projects);
+    return NextResponse.json(projects);
+  } catch (error) {
+    console.error('Project list error:', error);
+    return NextResponse.json({ error: 'Failed to load projects' }, { status: 500 });
+  }
 }
 
 // POST /api/projects — create a new project
 export async function POST(request: Request) {
-  const user = await getTestUser();
-  const body = await request.json();
-
-  const { title, projectType, wordCountGoal } = body;
-
-  if (!title || typeof title !== 'string') {
-    return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const project = await prisma.project.create({
-    data: {
-      title: title.trim(),
-      projectType: projectType || 'novel',
-      wordCountGoal: wordCountGoal || 80000,
-      userId: user.id,
-    },
-    select: {
-      id: true,
-      title: true,
-      projectType: true,
-      status: true,
-      wordCountGoal: true,
-      updatedAt: true,
-    },
-  });
+  const parsed = createProjectSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(validationError(), { status: 400 });
+  }
 
-  return NextResponse.json(project, { status: 201 });
+  try {
+    const project = await prisma.project.create({
+      data: {
+        ...parsed.data,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        projectType: true,
+        status: true,
+        wordCountGoal: true,
+        updatedAt: true,
+      },
+    });
+
+    return NextResponse.json(project, { status: 201 });
+  } catch (error) {
+    console.error('Project create error:', error);
+    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+  }
 }

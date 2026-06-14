@@ -33,7 +33,7 @@ export default function AuthLayout({
             gave me the forge to turn mine into a blaze.&rdquo;
           </blockquote>
           <p className="mt-4 text-sm text-brand-300">
-            — A future testimonial from a happy storyteller
+            — LoreScryver editorial team
           </p>
         </div>
 
