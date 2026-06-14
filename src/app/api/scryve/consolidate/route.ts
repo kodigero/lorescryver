@@ -3,49 +3,130 @@ import { prisma } from '@/lib/prisma';
 import { getTestUser } from '@/lib/test-user';
 import { chatCompletion } from '@/lib/deepseek';
 
-const SYSTEM_PROMPT = `You are Scryve, the AI narrative assistant for LoreScryver — a professional authoring platform for storytellers across all media (novels, screenplays, games, comics, animation, etc.).
+interface CharEntry {
+  name: string;
+  gender: string;
+  relationship: string;
+  roles: string[];
+}
 
-Your task: take the author's raw answers from a guided micro-questionnaire and consolidate them into clean, structured content for their project's Summary section.
+interface WizardData {
+  protagonistName: string;
+  protagonistGender: string;
+  protagonistOccupation: string;
+  protagonistLocation: string;
+  characters: CharEntry[];
+  antagonistName: string;
+  antagonistIsCharacter: boolean;
+  antagonistGender: string;
+  scopeLocation: string;
+  scopeTime: string;
+  scopeInstallments: string;
+  conflictWant: string;
+  conflictStakes: string;
+  outlineBefore: string;
+  outlineTurning: string;
+  outlineEnding: string;
+}
 
-The author answered simple, bite-sized questions. You need to weave these fragments into 7 coherent sections:
-1. Synopsis — A working summary of the story (combine character, desire, inciting incident, and ending)
-2. Genre — The story's genre classification
-3. Tone — The mood, atmosphere, and feeling
-4. Scope — The scale and boundaries of the story world (combine setting, time period, and world scale)
-5. Main Characters — Key characters and their roles (combine protagonist info with supporting cast)
-6. Main Conflict — The central dramatic tension (combine obstacle with stakes)
-7. Outline Overview — High-level story structure (combine inciting incident, turning point, climax, and ending)
+const ROLE_LABELS: Record<string, string> = {
+  important_person: 'most important person in protagonist\'s life',
+  role_model: 'role model',
+  confidant: 'closest confidant',
+  anchor: 'emotional anchor',
+  enemy: 'most hated person',
+  antagonist: 'main antagonist',
+  antagonist_ally: 'antagonist\'s ally',
+  other: 'supporting character',
+};
 
-For each section:
-- Weave the fragments into natural, flowing prose
-- Preserve the author's voice and intent
-- Add structure where helpful (e.g., character entries, act breakdowns)
-- Fill in obvious gaps with sensible suggestions (clearly marked with [Suggestion: ...])
-- Keep it concise and actionable — this is a working document, not a pitch
+const SYSTEM_PROMPT = `You are Scryve, the AI narrative assistant for LoreScryver — a professional authoring platform for storytellers.
 
-Respond ONLY with valid JSON in this exact format:
+You have a warm, friendly personality. You're like a trusted creative partner — supportive but honest. Write with heart, not like a machine.
+
+Your task: take the author's raw single-word answers from a guided conversation and consolidate them into clean, structured content for their project's Summary section.
+
+Create 5 sections:
+
+1. Main Characters — Present as a character web. Show each character's name, their role/relationship, and how they connect to others. Make the relationships feel alive and interconnected. Use correct pronouns (he/him/his for male, she/her for female).
+
+2. Scope — Where and when the story takes place. Paint the setting briefly but vividly. Include the format (standalone, trilogy, series, etc.).
+
+3. Main Conflict — The central dramatic tension. What the antagonist wants (or threatens), what's at stake for the protagonist, and why it matters.
+
+4. Outline Overview — The story arc in three beats: the before (status quo), the turning point (what changes everything), and the ending (how it resolves).
+
+5. Synopsis — YOUR MOST IMPORTANT JOB. Weave ALL the information — characters, world, conflict, and plot — into a cohesive, compelling narrative summary. This should read like a friend passionately describing the story to another friend. Not a dry summary. Make it breathe.
+
+Rules:
+- Write in flowing prose, not bullet points (except for character entries in Main Characters)
+- Preserve the author's intent — don't invent major plot points
+- Fill obvious gaps with sensible inferences (mark with [Suggestion: ...])
+- Keep it concise — this is a working document, not a pitch
+- Use he/him/his and she/her correctly based on character genders
+
+Respond ONLY with valid JSON:
 {
-  "summary.synopsis": "...",
-  "summary.genre": "...",
-  "summary.tone": "...",
-  "summary.scope": "...",
   "summary.main_characters": "...",
+  "summary.scope": "...",
   "summary.main_conflict": "...",
-  "summary.outline_overview": "..."
+  "summary.outline_overview": "...",
+  "summary.synopsis": "..."
 }
 
 Do not include any text before or after the JSON.`;
 
+function buildUserMessage(project: { title: string; projectType: string }, data: WizardData): string {
+  const characterLines = data.characters
+    .map((c) => {
+      const roles = c.roles.map((r) => ROLE_LABELS[r] || r).join(', ');
+      return `- ${c.name} (${c.relationship || 'relationship unknown'}) — ${roles}`;
+    })
+    .join('\n');
+
+  const antagonistType = data.antagonistIsCharacter
+    ? `${data.antagonistName} (${data.antagonistGender}, character)`
+    : `${data.antagonistName} (force/concept)`;
+
+  return `Project: "${project.title}" (${project.projectType})
+
+PROTAGONIST:
+- Name: ${data.protagonistName}
+- Gender: ${data.protagonistGender}
+- Occupation: ${data.protagonistOccupation}
+- Location: ${data.protagonistLocation}
+
+CHARACTERS AND RELATIONSHIPS:
+${characterLines || '(none specified)'}
+
+ANTAGONIST: ${antagonistType}
+
+SCOPE:
+- Setting: ${data.scopeLocation}
+- Time Period: ${data.scopeTime}
+- Format: ${data.scopeInstallments}
+
+CONFLICT:
+- Antagonist wants/threatens: ${data.conflictWant}
+- Protagonist stands to lose: ${data.conflictStakes}
+
+OUTLINE:
+- Before the conflict: ${data.outlineBefore}
+- Turning point: ${data.outlineTurning}
+- Ending: ${data.outlineEnding}
+
+Consolidate these into 5 structured Summary sections. Pay special attention to Synopsis — weave everything into a compelling narrative summary that captures the heart of this story.`;
+}
+
 export async function POST(request: Request) {
   const user = await getTestUser();
   const body = await request.json();
-  const { projectId, answers } = body;
+  const { projectId, wizardData } = body;
 
-  if (!projectId || !answers) {
-    return NextResponse.json({ error: 'projectId and answers are required' }, { status: 400 });
+  if (!projectId || !wizardData) {
+    return NextResponse.json({ error: 'projectId and wizardData are required' }, { status: 400 });
   }
 
-  // Verify project ownership
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: user.id },
   });
@@ -54,24 +135,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Project not found' }, { status: 404 });
   }
 
-  // Build the user message from micro-answers
-  const userMessage = `Here are the author's answers for their project "${project.title}" (${project.projectType}):
-
-PROTAGONIST NAME: ${answers.protagonistName || '(not provided)'}
-WHO THEY ARE: ${answers.protagonistDesc || '(not provided)'}
-WHAT THEY WANT: ${answers.protagonistDesire || '(not provided)'}
-WHERE IT TAKES PLACE: ${answers.setting || '(not provided)'}
-WHEN IT HAPPENS: ${answers.timePeriod || '(not provided)'}
-HOW BIG IS THE WORLD: ${answers.worldScale || '(not provided)'}
-GENRE: ${answers.genre || '(not provided)'}
-HOW IT FEELS: ${answers.tone || '(not provided)'}
-WHAT KICKS THE STORY OFF: ${answers.incitingIncident || '(not provided)'}
-WHAT STANDS IN THEIR WAY: ${answers.obstacle || '(not provided)'}
-OTHER IMPORTANT CHARACTERS: ${answers.supportingCast || '(not provided)'}
-MAJOR TURNING POINT: ${answers.turningPoint || '(not provided)'}
-HOW IT ENDS: ${answers.ending || '(not provided)'}
-
-Consolidate these into structured Summary content.`;
+  const userMessage = buildUserMessage(
+    { title: project.title, projectType: project.projectType },
+    wizardData as WizardData
+  );
 
   try {
     const result = await chatCompletion(
@@ -82,10 +149,8 @@ Consolidate these into structured Summary content.`;
       { temperature: 0.6, maxTokens: 4096 }
     );
 
-    // Parse the JSON response
     let sections: Record<string, string>;
     try {
-      // Strip markdown code fences if present
       let cleaned = result.content.trim();
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
@@ -98,7 +163,6 @@ Consolidate these into structured Summary content.`;
       );
     }
 
-    // Save all sections to database
     const upserts = Object.entries(sections).map(([key, content]) =>
       prisma.projectSection.upsert({
         where: { projectId_key: { projectId, key } },
@@ -109,10 +173,7 @@ Consolidate these into structured Summary content.`;
 
     await Promise.all(upserts);
 
-    return NextResponse.json({
-      sections,
-      usage: result.usage,
-    });
+    return NextResponse.json({ sections, usage: result.usage });
   } catch (error) {
     console.error('Scryve consolidation error:', error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 
 /* ── Icons ──────────────────────────────────────────────────────────── */
 
@@ -51,98 +51,46 @@ function RefreshIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Micro-question wizard steps ────────────────────────────────────── */
-/* Each question = ONE thought. The author just answers, Scryve thinks. */
+/* ── Types ──────────────────────────────────────────────────────────── */
 
-interface WizardStep {
-  key: string;
-  fieldKey: string;
-  question: string;
-  placeholder: string;
+interface ChatMsg {
+  role: 'scryve' | 'user';
+  text: string;
 }
 
-const wizardSteps: WizardStep[] = [
-  {
-    key: 'protagonistName',
-    fieldKey: 'protagonistName',
-    question: "What's your main character's name?",
-    placeholder: 'Kaelith',
-  },
-  {
-    key: 'protagonistDesc',
-    fieldKey: 'protagonistDesc',
-    question: "In a few words, who are they?",
-    placeholder: 'A tired detective with a secret',
-  },
-  {
-    key: 'protagonistDesire',
-    fieldKey: 'protagonistDesire',
-    question: "What do they want more than anything?",
-    placeholder: 'To find their missing sister',
-  },
-  {
-    key: 'setting',
-    fieldKey: 'setting',
-    question: "Where does the story take place?",
-    placeholder: 'A rain-soaked port city',
-  },
-  {
-    key: 'timePeriod',
-    fieldKey: 'timePeriod',
-    question: "When does it happen?",
-    placeholder: 'Modern day, medieval, far future...',
-  },
-  {
-    key: 'genre',
-    fieldKey: 'genre',
-    question: "What genre is it?",
-    placeholder: 'Dark fantasy, sci-fi thriller, romance...',
-  },
-  {
-    key: 'tone',
-    fieldKey: 'tone',
-    question: "How does the story feel? One or two words.",
-    placeholder: 'Tense, hopeful, eerie...',
-  },
-  {
-    key: 'worldScale',
-    fieldKey: 'worldScale',
-    question: "How big is the world? A single room, a city, a whole planet?",
-    placeholder: 'A sprawling continent',
-  },
-  {
-    key: 'incitingIncident',
-    fieldKey: 'incitingIncident',
-    question: "What event kicks the story off?",
-    placeholder: 'A letter arrives with a cryptic warning',
-  },
-  {
-    key: 'obstacle',
-    fieldKey: 'obstacle',
-    question: "What's standing in your character's way?",
-    placeholder: 'A corrupt guild controls the only route forward',
-  },
-  {
-    key: 'supportingCast',
-    fieldKey: 'supportingCast',
-    question: "Any other important characters? Just names and a word or two each.",
-    placeholder: 'Renn — loyal friend, Vara — rival spy',
-  },
-  {
-    key: 'turningPoint',
-    fieldKey: 'turningPoint',
-    question: "What's a major turning point in the story?",
-    placeholder: 'She discovers the villain is her mentor',
-  },
-  {
-    key: 'ending',
-    fieldKey: 'ending',
-    question: "Last one — how does it end? Even a rough idea works.",
-    placeholder: 'She wins but loses someone she loves',
-  },
-];
+interface WizardStep {
+  id: string;
+  question: string;
+  placeholder: string;
+  choices?: string[];
+}
 
-/* ── Card definitions (for the editable view) ───────────────────────── */
+interface CharEntry {
+  name: string;
+  gender: string;
+  relationship: string;
+  roles: string[];
+}
+
+interface WizardData {
+  protagonistName: string;
+  protagonistGender: string;
+  protagonistOccupation: string;
+  protagonistLocation: string;
+  characters: CharEntry[];
+  antagonistName: string;
+  antagonistIsCharacter: boolean;
+  antagonistGender: string;
+  scopeLocation: string;
+  scopeTime: string;
+  scopeInstallments: string;
+  conflictWant: string;
+  conflictStakes: string;
+  outlineBefore: string;
+  outlineTurning: string;
+  outlineEnding: string;
+  _temp: string;
+}
 
 interface CardDef {
   key: string;
@@ -151,31 +99,318 @@ interface CardDef {
   rows: number;
 }
 
-const cards: CardDef[] = [
-  { key: 'summary.synopsis', title: 'Synopsis', placeholder: 'Working summary of your story...', rows: 6 },
-  { key: 'summary.genre', title: 'Genre', placeholder: 'Story genre...', rows: 2 },
-  { key: 'summary.tone', title: 'Tone', placeholder: 'Mood and atmosphere...', rows: 2 },
-  { key: 'summary.scope', title: 'Scope', placeholder: 'Scale of the story world...', rows: 3 },
-  { key: 'summary.main_characters', title: 'Main Characters', placeholder: 'Key characters and roles...', rows: 5 },
-  { key: 'summary.main_conflict', title: 'Main Conflict', placeholder: 'Central dramatic tension...', rows: 4 },
-  { key: 'summary.outline_overview', title: 'Outline Overview', placeholder: 'High-level story structure...', rows: 8 },
-];
-
-/* ── Save state type ────────────────────────────────────────────────── */
+interface NextResult {
+  data: WizardData;
+  step: WizardStep | null;
+  transitions: string[];
+  phase: number;
+}
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-/* ── Editable Card component ────────────────────────────────────────── */
+/* ── Constants ──────────────────────────────────────────────────────── */
 
-function SummaryCard({
-  card,
-  projectId,
-  initialContent,
-}: {
-  card: CardDef;
-  projectId: string;
-  initialContent: string;
-}) {
+const INITIAL_DATA: WizardData = {
+  protagonistName: '',
+  protagonistGender: '',
+  protagonistOccupation: '',
+  protagonistLocation: '',
+  characters: [],
+  antagonistName: '',
+  antagonistIsCharacter: false,
+  antagonistGender: '',
+  scopeLocation: '',
+  scopeTime: '',
+  scopeInstallments: '',
+  conflictWant: '',
+  conflictStakes: '',
+  outlineBefore: '',
+  outlineTurning: '',
+  outlineEnding: '',
+  _temp: '',
+};
+
+const PHASES = ['Characters', 'Scope', 'Conflict', 'Outline', 'Synopsis'];
+
+const cards: CardDef[] = [
+  { key: 'summary.main_characters', title: 'Main Characters', placeholder: 'Key characters and their connections...', rows: 6 },
+  { key: 'summary.scope', title: 'Scope', placeholder: 'Scale and boundaries of the story world...', rows: 3 },
+  { key: 'summary.main_conflict', title: 'Main Conflict', placeholder: 'Central dramatic tension...', rows: 4 },
+  { key: 'summary.outline_overview', title: 'Outline Overview', placeholder: 'High-level story structure...', rows: 8 },
+  { key: 'summary.synopsis', title: 'Synopsis', placeholder: 'Working summary of your story...', rows: 6 },
+];
+
+/* ── State Machine ──────────────────────────────────────────────────── */
+
+function processAnswer(stepId: string, answer: string, data: WizardData): NextResult {
+  const d: WizardData = {
+    ...data,
+    characters: data.characters.map(c => ({ ...c, roles: [...c.roles] })),
+  };
+
+  const n = d.protagonistName;
+  const pos = d.protagonistGender === 'female' ? 'her' : 'his';
+  const obj = d.protagonistGender === 'female' ? 'her' : 'him';
+
+  const findChar = (name: string) =>
+    d.characters.find(c => c.name.toLowerCase() === name.toLowerCase());
+
+  switch (stepId) {
+    /* ── Phase 0: Characters ── */
+
+    case 'protagonist_name': {
+      d.protagonistName = answer;
+      return { data: d, step: { id: 'protagonist_gender', question: `Is ${answer} male or female?`, placeholder: '', choices: ['Male', 'Female'] }, transitions: [], phase: 0 };
+    }
+
+    case 'protagonist_gender': {
+      d.protagonistGender = answer.toLowerCase();
+      return { data: d, step: { id: 'protagonist_occupation', question: `Nice! What does ${d.protagonistName} do?`, placeholder: 'detective, blacksmith, student...' }, transitions: [], phase: 0 };
+    }
+
+    case 'protagonist_occupation': {
+      d.protagonistOccupation = answer;
+      return { data: d, step: { id: 'protagonist_location', question: `Where does ${d.protagonistName} live?`, placeholder: 'Tokyo, Mars, Winterfell...' }, transitions: [], phase: 0 };
+    }
+
+    case 'protagonist_location': {
+      d.protagonistLocation = answer;
+      return { data: d, step: { id: 'important_person', question: `Who is the most important person in ${d.protagonistName}'s life?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'important_person': {
+      d._temp = answer;
+      const ex = findChar(answer);
+      if (ex) {
+        ex.roles.push('important_person');
+        d._temp = '';
+        return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'important_person_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'mother, wife, mentor...' }, transitions: [], phase: 0 };
+    }
+
+    case 'important_person_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['important_person'] });
+      d._temp = '';
+      return { data: d, step: { id: 'role_model', question: `Who does ${n} look up to as a role model?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'role_model': {
+      d._temp = answer;
+      const ex = findChar(answer);
+      if (ex) {
+        ex.roles.push('role_model');
+        d._temp = '';
+        return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'role_model_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'father, teacher, captain...' }, transitions: [], phase: 0 };
+    }
+
+    case 'role_model_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['role_model'] });
+      d._temp = '';
+      return { data: d, step: { id: 'confidant', question: `Who knows ${n}'s darkest secrets?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'confidant': {
+      d._temp = answer;
+      const ex = findChar(answer);
+      if (ex) {
+        ex.roles.push('confidant');
+        d._temp = '';
+        return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'confidant_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'best friend, sister, partner...' }, transitions: [], phase: 0 };
+    }
+
+    case 'confidant_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['confidant'] });
+      d._temp = '';
+      return { data: d, step: { id: 'anchor', question: `Who keeps ${n} grounded when things get tough?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'anchor': {
+      d._temp = answer;
+      const ex = findChar(answer);
+      if (ex) {
+        ex.roles.push('anchor');
+        d._temp = '';
+        return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'anchor_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'grandmother, coach, lover...' }, transitions: [], phase: 0 };
+    }
+
+    case 'anchor_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['anchor'] });
+      d._temp = '';
+      return { data: d, step: { id: 'enemy', question: `Who does ${n} hate the most?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'enemy': {
+      d._temp = answer;
+      const ex = findChar(answer);
+      if (ex) {
+        ex.roles.push('enemy');
+        d._temp = '';
+        return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'enemy_rel', question: `What is ${answer} to ${obj}?`, placeholder: 'rival, bully, ex-partner...' }, transitions: [], phase: 0 };
+    }
+
+    case 'enemy_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['enemy'] });
+      d._temp = '';
+      return { data: d, step: { id: 'antagonist', question: `Now the big one — who or what is working against ${n}?`, placeholder: 'a name or force' }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist': {
+      d.antagonistName = answer;
+      return { data: d, step: { id: 'antagonist_is_person', question: `Is ${answer} a person?`, placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist_is_person': {
+      if (answer.toLowerCase() === 'yes') {
+        d.antagonistIsCharacter = true;
+        return { data: d, step: { id: 'antagonist_gender', question: `Is ${d.antagonistName} male or female?`, placeholder: '', choices: ['Male', 'Female'] }, transitions: [], phase: 0 };
+      }
+      d.antagonistIsCharacter = false;
+      return { data: d, step: { id: 'more_characters', question: 'Anyone else who plays a major role we haven\'t mentioned?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist_gender': {
+      d.antagonistGender = answer.toLowerCase();
+      const ex = findChar(d.antagonistName);
+      if (ex) {
+        ex.gender = answer.toLowerCase();
+        if (!ex.roles.includes('antagonist')) ex.roles.push('antagonist');
+        return { data: d, step: { id: 'antagonist_ally', question: `Who is ${d.antagonistName}'s most loyal ally?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'antagonist_rel', question: `What is ${d.antagonistName} to ${n}?`, placeholder: 'rival, tyrant, former ally...' }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist_rel': {
+      d.characters.push({ name: d.antagonistName, gender: d.antagonistGender, relationship: answer, roles: ['antagonist'] });
+      return { data: d, step: { id: 'antagonist_ally', question: `Who is ${d.antagonistName}'s most loyal ally?`, placeholder: 'a name' }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist_ally': {
+      d._temp = answer;
+      return { data: d, step: { id: 'antagonist_ally_rel', question: `What is ${answer} to ${d.antagonistName}?`, placeholder: 'lieutenant, advisor, servant...' }, transitions: [], phase: 0 };
+    }
+
+    case 'antagonist_ally_rel': {
+      const allyEx = findChar(d._temp);
+      if (allyEx) {
+        allyEx.roles.push('antagonist_ally');
+      } else {
+        d.characters.push({ name: d._temp, gender: '', relationship: `${answer} (to ${d.antagonistName})`, roles: ['antagonist_ally'] });
+      }
+      d._temp = '';
+      return { data: d, step: { id: 'more_allies', question: `Anyone else backing ${d.antagonistName}?`, placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    case 'more_allies': {
+      if (answer.toLowerCase() === 'yes') {
+        return { data: d, step: { id: 'antagonist_ally', question: 'What\'s their name?', placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return { data: d, step: { id: 'more_characters', question: 'Anyone else who plays a major role we haven\'t mentioned?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    case 'more_characters': {
+      if (answer.toLowerCase() === 'yes') {
+        return { data: d, step: { id: 'extra_name', question: 'What\'s their name?', placeholder: 'a name' }, transitions: [], phase: 0 };
+      }
+      return {
+        data: d,
+        step: { id: 'scope_location', question: 'Where does this story unfold?', placeholder: 'kingdom, city, planet...' },
+        transitions: ['Great crew! I can already see some interesting dynamics. Let\'s set the stage.'],
+        phase: 1,
+      };
+    }
+
+    case 'extra_name': {
+      d._temp = answer;
+      return { data: d, step: { id: 'extra_rel', question: `What is ${answer} to ${n}?`, placeholder: 'ally, lover, stranger...' }, transitions: [], phase: 0 };
+    }
+
+    case 'extra_rel': {
+      d.characters.push({ name: d._temp, gender: '', relationship: answer, roles: ['other'] });
+      d._temp = '';
+      return { data: d, step: { id: 'more_characters', question: 'Anyone else?', placeholder: '', choices: ['Yes', 'No'] }, transitions: [], phase: 0 };
+    }
+
+    /* ── Phase 1: Scope ── */
+
+    case 'scope_location': {
+      d.scopeLocation = answer;
+      return { data: d, step: { id: 'scope_time', question: 'What time period?', placeholder: 'medieval, modern, 2185...' }, transitions: [], phase: 1 };
+    }
+
+    case 'scope_time': {
+      d.scopeTime = answer;
+      return { data: d, step: { id: 'scope_installments', question: 'Single story or series?', placeholder: 'single, trilogy, series...' }, transitions: [], phase: 1 };
+    }
+
+    case 'scope_installments': {
+      d.scopeInstallments = answer;
+      const q = d.antagonistIsCharacter
+        ? `What does ${d.antagonistName} want?`
+        : `What does ${d.antagonistName} threaten?`;
+      return {
+        data: d,
+        step: { id: 'conflict_want', question: q, placeholder: 'power, revenge, survival...' },
+        transitions: ['Got it. Now for the juicy part.'],
+        phase: 2,
+      };
+    }
+
+    /* ── Phase 2: Conflict ── */
+
+    case 'conflict_want': {
+      d.conflictWant = answer;
+      return { data: d, step: { id: 'conflict_stakes', question: `What does ${n} stand to lose?`, placeholder: 'family, freedom, identity...' }, transitions: [], phase: 2 };
+    }
+
+    case 'conflict_stakes': {
+      d.conflictStakes = answer;
+      return {
+        data: d,
+        step: { id: 'outline_before', question: `What is ${n}'s life like before the conflict?`, placeholder: 'peaceful, chaotic, mundane...' },
+        transitions: ['The tension is real! Let\'s sketch the big picture.'],
+        phase: 3,
+      };
+    }
+
+    /* ── Phase 3: Outline ── */
+
+    case 'outline_before': {
+      d.outlineBefore = answer;
+      return { data: d, step: { id: 'outline_turning', question: 'What triggers the turning point?', placeholder: 'betrayal, discovery, death...' }, transitions: [], phase: 3 };
+    }
+
+    case 'outline_turning': {
+      d.outlineTurning = answer;
+      return { data: d, step: { id: 'outline_ending', question: 'How does it end?', placeholder: 'victory, sacrifice, escape...' }, transitions: [], phase: 3 };
+    }
+
+    case 'outline_ending': {
+      d.outlineEnding = answer;
+      return {
+        data: d,
+        step: null,
+        transitions: ['I love where this is going! Give me a moment to weave it all together...'],
+        phase: 4,
+      };
+    }
+
+    default:
+      return { data: d, step: null, transitions: [], phase: 4 };
+  }
+}
+
+/* ── Editable Card ──────────────────────────────────────────────────── */
+
+function SummaryCard({ card, projectId, initialContent }: { card: CardDef; projectId: string; initialContent: string }) {
   const [value, setValue] = useState(initialContent);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -186,25 +421,22 @@ function SummaryCard({
     lastSavedRef.current = initialContent;
   }, [initialContent]);
 
-  const save = useCallback(
-    async (text: string) => {
-      if (text === lastSavedRef.current) return;
-      setSaveState('saving');
-      try {
-        await fetch(`/api/projects/${projectId}/sections`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: card.key, content: text }),
-        });
-        lastSavedRef.current = text;
-        setSaveState('saved');
-        setTimeout(() => setSaveState('idle'), 1500);
-      } catch {
-        setSaveState('idle');
-      }
-    },
-    [projectId, card.key]
-  );
+  const save = useCallback(async (text: string) => {
+    if (text === lastSavedRef.current) return;
+    setSaveState('saving');
+    try {
+      await fetch(`/api/projects/${projectId}/sections`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: card.key, content: text }),
+      });
+      lastSavedRef.current = text;
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 1500);
+    } catch {
+      setSaveState('idle');
+    }
+  }, [projectId, card.key]);
 
   const handleChange = (text: string) => {
     setValue(text);
@@ -250,7 +482,7 @@ function SummaryCard({
   );
 }
 
-/* ── Wizard Chat Bubbles ────────────────────────────────────────────── */
+/* ── Chat Bubbles ───────────────────────────────────────────────────── */
 
 function ScryveMessage({ children }: { children: React.ReactNode }) {
   return (
@@ -275,22 +507,25 @@ function UserMessage({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── Main Summary Section ───────────────────────────────────────────── */
+/* ── Main Component ─────────────────────────────────────────────────── */
 
 export default function SummarySection({ projectId }: { projectId: string }) {
   const [sectionData, setSectionData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [hasContent, setHasContent] = useState(false);
+
   const [wizardActive, setWizardActive] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [currentStep, setCurrentStep] = useState<WizardStep | null>(null);
+  const [wizardData, setWizardData] = useState<WizardData>(INITIAL_DATA);
+  const [phase, setPhase] = useState(0);
   const [currentInput, setCurrentInput] = useState('');
   const [consolidating, setConsolidating] = useState(false);
   const [consolidateError, setConsolidateError] = useState('');
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load existing section data
   useEffect(() => {
     fetch(`/api/projects/${projectId}/sections`)
       .then((r) => r.json())
@@ -309,60 +544,75 @@ export default function SummarySection({ projectId }: { projectId: string }) {
       .catch(() => setLoading(false));
   }, [projectId]);
 
-  // Auto-scroll wizard chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentStep, answers]);
+  }, [messages]);
 
-  // Focus input when step changes
   useEffect(() => {
-    if (wizardActive && inputRef.current) {
+    if (wizardActive && currentStep && !currentStep.choices) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [currentStep, wizardActive]);
 
   function startWizard() {
-    setWizardActive(true);
-    setCurrentStep(0);
-    setAnswers({});
+    const initial: ChatMsg[] = [
+      { role: 'scryve', text: 'Hey! I\'m Scryve, and I\'m here to help you bring your story to life. Just answer with a word or two — I\'ll handle the rest.' },
+      { role: 'scryve', text: 'Let\'s start with the star of the show — what\'s your protagonist\'s name?' },
+    ];
+    setMessages(initial);
+    setCurrentStep({ id: 'protagonist_name', question: 'What\'s your protagonist\'s name?', placeholder: 'a name' });
+    setWizardData({ ...INITIAL_DATA, characters: [] });
+    setPhase(0);
     setCurrentInput('');
     setConsolidateError('');
+    setWizardActive(true);
   }
 
-  function submitAnswer() {
-    const text = currentInput.trim();
-    if (!text) return;
+  function handleSubmit(answerOverride?: string) {
+    const answer = (answerOverride || currentInput).trim();
+    if (!answer || !currentStep) return;
 
-    const step = wizardSteps[currentStep];
-    const newAnswers = { ...answers, [step.fieldKey]: text };
-    setAnswers(newAnswers);
-    setCurrentInput('');
+    const newMessages: ChatMsg[] = [...messages, { role: 'user', text: answer }];
+    const result = processAnswer(currentStep.id, answer, wizardData);
 
-    if (currentStep < wizardSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      consolidate(newAnswers);
+    setWizardData(result.data);
+    setPhase(result.phase);
+
+    for (const t of result.transitions) {
+      newMessages.push({ role: 'scryve', text: t });
     }
+
+    if (result.step) {
+      newMessages.push({ role: 'scryve', text: result.step.question });
+      setCurrentStep(result.step);
+    } else {
+      setCurrentStep(null);
+      setMessages(newMessages);
+      setCurrentInput('');
+      consolidate(result.data);
+      return;
+    }
+
+    setMessages(newMessages);
+    setCurrentInput('');
   }
 
-  async function consolidate(finalAnswers: Record<string, string>) {
+  async function consolidate(data: WizardData) {
     setConsolidating(true);
     setConsolidateError('');
 
     try {
+      const { _temp, ...cleanData } = data;
       const res = await fetch('/api/scryve/consolidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, answers: finalAnswers }),
+        body: JSON.stringify({ projectId, wizardData: cleanData }),
       });
 
-      const data = await res.json();
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Consolidation failed');
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Consolidation failed');
-      }
-
-      setSectionData((prev) => ({ ...prev, ...data.sections }));
+      setSectionData((prev) => ({ ...prev, ...result.sections }));
       setHasContent(true);
       setWizardActive(false);
     } catch (err) {
@@ -375,7 +625,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      submitAnswer();
+      handleSubmit();
     }
   }
 
@@ -387,17 +637,31 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     );
   }
 
-  /* ── Wizard view ─────────────────────────────────────────────────── */
-
+  /* ── Wizard view ── */
   if (wizardActive) {
     return (
       <div className="mx-auto max-w-2xl flex flex-col h-full">
-        {/* Progress bar */}
+        {/* Phase stepper */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              {Object.keys(answers).length} of {wizardSteps.length} answered
-            </span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3 text-xs">
+              {PHASES.map((p, i) => (
+                <Fragment key={p}>
+                  {i > 0 && <span className="text-white/10">{'›'}</span>}
+                  <span
+                    className={
+                      i < phase
+                        ? 'text-brand-400'
+                        : i === phase
+                        ? 'text-white font-medium'
+                        : 'text-white/30'
+                    }
+                  >
+                    {p}
+                  </span>
+                </Fragment>
+              ))}
+            </div>
             {!consolidating && (
               <button
                 onClick={() => setWizardActive(false)}
@@ -410,48 +674,36 @@ export default function SummarySection({ projectId }: { projectId: string }) {
           <div className="h-1 rounded-full bg-white/[0.06]">
             <div
               className="h-1 rounded-full bg-brand-500 transition-all duration-500"
-              style={{ width: `${((Object.keys(answers).length) / wizardSteps.length) * 100}%` }}
+              style={{ width: `${((phase + 1) / PHASES.length) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-          {/* Intro message */}
-          {currentStep === 0 && Object.keys(answers).length === 0 && (
-            <ScryveMessage>Quick questions — just answer off the top of your head. I&apos;ll do the heavy lifting.</ScryveMessage>
+          {messages.map((msg, i) =>
+            msg.role === 'scryve' ? (
+              <ScryveMessage key={i}>{msg.text}</ScryveMessage>
+            ) : (
+              <UserMessage key={i}>{msg.text}</UserMessage>
+            )
           )}
 
-          {wizardSteps.map((step, i) => {
-            if (i > currentStep) return null;
-
-            return (
-              <div key={step.key} className="space-y-3">
-                <ScryveMessage>{step.question}</ScryveMessage>
-                {answers[step.fieldKey] && (
-                  <UserMessage>{answers[step.fieldKey]}</UserMessage>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Consolidating state */}
           {consolidating && (
             <ScryveMessage>
               <div className="flex items-center gap-2">
                 <SpinnerIcon className="h-4 w-4 animate-spin text-brand-400" />
-                <span>Got it all. Putting your Summary together now...</span>
+                <span>Weaving your story together...</span>
               </div>
             </ScryveMessage>
           )}
 
-          {/* Error state */}
           {consolidateError && (
             <ScryveMessage>
               <div className="text-red-400">
                 Something went wrong: {consolidateError}
                 <button
-                  onClick={() => consolidate(answers)}
+                  onClick={() => consolidate(wizardData)}
                   className="ml-2 underline hover:no-underline"
                 >
                   Try again
@@ -464,29 +716,43 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         </div>
 
         {/* Input area */}
-        {!consolidating && currentStep < wizardSteps.length && !answers[wizardSteps[currentStep]?.fieldKey] && (
+        {!consolidating && currentStep && (
           <div className="border-t border-white/5 pt-4">
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={wizardSteps[currentStep].placeholder}
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
-                autoFocus
-              />
-              <button
-                onClick={submitAnswer}
-                disabled={!currentInput.trim()}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-30"
-              >
-                <SendIcon className="h-4 w-4" />
-              </button>
-            </div>
+            {currentStep.choices ? (
+              <div className="flex gap-3 justify-center">
+                {currentStep.choices.map((choice) => (
+                  <button
+                    key={choice}
+                    onClick={() => handleSubmit(choice)}
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-white transition hover:bg-brand-600 hover:border-brand-600"
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={currentInput}
+                  onChange={(e) => setCurrentInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={currentStep.placeholder}
+                  className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={!currentInput.trim()}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-30"
+                >
+                  <SendIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <p className="mt-2 text-center text-[10px] text-white/20">
-              Press Enter to submit
+              {currentStep.choices ? 'Pick one' : 'Press Enter to submit'}
             </p>
           </div>
         )}
@@ -494,8 +760,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     );
   }
 
-  /* ── Empty state — no content yet ────────────────────────────────── */
-
+  /* ── Empty state ── */
   if (!hasContent) {
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
@@ -504,21 +769,20 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         </div>
         <h2 className="text-xl font-bold">Set up your Summary</h2>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Answer a few quick questions and Scryve will build your Summary for you. No overthinking — just answer off the top of your head.
+          Chat with Scryve and build your story&apos;s foundation. Just quick answers — Scryve does the heavy lifting.
         </p>
         <button
           onClick={startWizard}
           className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
         >
           <ScryveIcon className="h-4 w-4" />
-          Start Content Wizard
+          Chat with Scryve
         </button>
       </div>
     );
   }
 
-  /* ── Content view — editable cards ───────────────────────────────── */
-
+  /* ── Content view ── */
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between mb-6">
