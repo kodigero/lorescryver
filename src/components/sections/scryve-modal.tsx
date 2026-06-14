@@ -161,6 +161,3 @@ export function ScryveModal({ isOpen, onClose, currentStep, wizardData, onLockIn
     </div>
   );
 }
-
-/* ── Main Component ── */
-
