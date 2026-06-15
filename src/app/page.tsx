@@ -135,7 +135,7 @@ const pipeline = [
   {
     step: '01',
     title: 'Ideate & Worldbuild',
-    description: `Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you’re writing a novel, a game script, or a screenplay.`,
+    description: 'Brainstorm plots, map systems, build character arcs, and organize your story bible — whether you are writing a novel, a game script, or a screenplay.',
     icon: SparklesIcon,
   },
   {
@@ -153,7 +153,7 @@ const pipeline = [
   {
     step: '04',
     title: 'Compile & Format',
-    description: `Export to ePub, PDF, DOCX, screenplay format, or custom templates with professional layouts and style presets.`,
+    description: 'Export to ePub, PDF, DOCX, screenplay format, or custom templates with professional layouts and style presets.',
     icon: LayersIcon,
   },
   {
@@ -167,12 +167,12 @@ const pipeline = [
 const features = [
   {
     title: 'Story Bible',
-    description: `A living wiki for your world — characters, locations, timelines, and lore, all cross-linked and searchable across every project.`,
+    description: 'A living wiki for your world — characters, locations, timelines, and lore, all cross-linked and searchable across every project.',
     icon: BookIcon,
   },
   {
     title: 'Scryve',
-    description: `Your virtual scribe. Context-aware AI that knows your world — offering suggestions that respect your canon, tone, and style.`,
+    description: 'Your virtual scribe. Context-aware AI that knows your world — offering suggestions that respect your canon, tone, and style.',
     icon: SparklesIcon,
   },
   {
@@ -187,7 +187,7 @@ const features = [
   },
   {
     title: 'Universe Management',
-    description: `Manage shared universes across projects — cross-project continuity checks, shared bibles, and universe-level metadata.`,
+    description: 'Manage shared universes across projects — cross-project continuity checks, shared bibles, and universe-level metadata.',
     icon: GlobeIcon,
   },
   {
@@ -640,8 +640,8 @@ export default async function LandingPage() {
             Ready to bring your story to life?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Join thousands of storytellers who&apos;ve found their home.
-            Whether it&apos;s a novel, a game, or a screenplay &mdash; if it has a
+            Join thousands of storytellers who have found their home.
+            Whether it is a novel, a game, or a screenplay &mdash; if it has a
             story, LoreScryver can write it.
           </p>
           <div className="mt-10">
