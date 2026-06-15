@@ -37,4 +37,6 @@ docker compose up -d
 
 ## Current Handoff
 
-See [docs/CLAUDE_COWORK_TAKEOVER.md](docs/CLAUDE_COWORK_TAKEOVER.md) for the current PR status, production secret assumptions, validation results, and recommended next work.
+GitHub is the source of truth for project status. Refresh `origin/main`, PRs, issues, and Actions before making status claims or starting new work.
+
+See [docs/CLAUDE_COWORK_TAKEOVER.md](docs/CLAUDE_COWORK_TAKEOVER.md) for the current GitHub-sourced handoff, production secret assumptions, validation results, and recommended next work.
