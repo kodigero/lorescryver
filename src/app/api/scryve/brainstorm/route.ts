@@ -18,6 +18,11 @@ export async function POST(req: Request) {
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    const concept = conceptId
+      ? await prisma.stagingConcept.findFirst({ where: { id: conceptId, projectId } })
+      : null;
+    if (conceptId && !concept) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     // Fetch project summary context
     const sections = await prisma.projectSection.findMany({
       where: { projectId, key: { startsWith: 'summary.' } },
@@ -41,10 +46,18 @@ export async function POST(req: Request) {
       projectContext = 'No summary has been written yet. The author is just getting started.';
     }
 
-    const systemPrompt = `You are Scryve, a warm and creative story-building assistant for LoreScryver. You are in a brainstorming session with an author.
+    const modeInstruction = concept?.phase === 'candidate'
+      ? `CURRENT MODE:
+You are stress-testing a candidate concept before it can become canon. Compare it against the project context, existing canon, and likely future expansion paths. Flag contradictions, weak logic, missing implications, continuity risks, and places where the author needs a clearer decision. Be constructive: after each concern, suggest 1-3 concrete fixes or options.`
+      : `CURRENT MODE:
+You are helping the author explore rough concepts. Capture scattered ideas, organize them, ask useful follow-up questions, and help rough inspiration become a candidate idea.`;
+
+    const systemPrompt = `You are Scryve, a warm and creative story-building assistant for LoreScryver. You are in a staging session with an author.
 
 PROJECT CONTEXT:
 ${projectContext}
+
+${modeInstruction}
 
 YOUR PERSONALITY:
 1. Be warm, friendly, like chatting with a creative friend.
@@ -79,8 +92,6 @@ YOUR ROLE:
         { role: 'assistant' as const, content: result.content },
       ];
 
-      // Auto-update title from first user message if still default
-      const concept = await prisma.stagingConcept.findFirst({ where: { id: conceptId } });
       const updateData: Record<string, unknown> = { messages: allMessages };
 
       if (concept && concept.title === 'New Brainstorm') {
