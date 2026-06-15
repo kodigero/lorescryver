@@ -5,8 +5,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useDomain } from '@/contexts/domain-context';
 import SummarySection from '@/components/sections/summary-section';
+import StagingSection from '@/components/sections/staging-section';
 
-/* ── Icons ──────────────────────────────────────────────────────────── */
+/* -- Icons -- */
 
 function ArrowLeftIcon({ className }: { className?: string }) {
   return (
@@ -119,7 +120,7 @@ function SettingsIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Section definitions ────────────────────────────────────────────── */
+/* -- Section definitions -- */
 
 interface Section {
   key: string;
@@ -129,9 +130,9 @@ interface Section {
 }
 
 const foundationSections: Section[] = [
-  { key: 'summary', label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project — logline, synopsis, genre, tone, and key story pillars at a glance.' },
-  { key: 'atlas', label: 'Atlas', icon: MapIcon, description: 'The map of your universe — locations, regions, timelines, factions, and how they connect.' },
-  { key: 'story-bible', label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP — characters, lore entries, rules, and everything that defines your story world.' },
+  { key: 'summary', label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project - logline, synopsis, genre, tone, and key story pillars at a glance.' },
+  { key: 'atlas', label: 'Atlas', icon: MapIcon, description: 'The map of your universe - locations, regions, timelines, factions, and how they connect.' },
+  { key: 'story-bible', label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP - characters, lore entries, rules, and everything that defines your story world.' },
   { key: 'staging', label: 'Staging', icon: LayersIcon, description: 'Organize and sequence your narrative elements before they flow into a Creation.' },
   { key: 'reference', label: 'Reference', icon: BookmarkIcon, description: 'Bookmarked inspiration, mood boards, visual references, and external links that inform your world.' },
   { key: 'research', label: 'Research', icon: SearchIcon, description: 'Notes, fact-checking, historical context, and deep-dive material supporting your story.' },
@@ -139,11 +140,11 @@ const foundationSections: Section[] = [
 
 const deliverySections: Record<string, Section[]> = {
   novel: [
-    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — where the Lore Codex becomes a novel.' },
+    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose - where the Lore Codex becomes a novel.' },
     { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare your manuscript for review, proofing, and publication.' },
   ],
   novella: [
-    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose — your novella takes shape here.' },
+    { key: 'manuscript', label: 'Manuscript', icon: PenLineIcon, description: 'Chapters, scenes, and prose - your novella takes shape here.' },
     { key: 'creation-staging', label: 'Staging & Export', icon: LayersIcon, description: 'Prepare for review, proofing, and publication.' },
   ],
   short_story: [
@@ -196,7 +197,7 @@ const projectTypeLabels: Record<string, string> = {
   nonfiction: 'Narrative Non-Fiction', other: 'Other',
 };
 
-/* ── Types ──────────────────────────────────────────────────────────── */
+/* -- Types -- */
 
 interface Project {
   id: string;
@@ -207,7 +208,7 @@ interface Project {
   updatedAt: string;
 }
 
-/* ── Page ────────────────────────────────────────────────────────────── */
+/* -- Page -- */
 
 export default function ProjectPage() {
   const params = useParams();
@@ -221,7 +222,6 @@ export default function ProjectPage() {
   const [deliveryDropdownOpen, setDeliveryDropdownOpen] = useState(false);
   const deliveryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Register as inside project on mount, unregister on unmount
   useEffect(() => {
     setIsInsideProject(true);
     return () => setIsInsideProject(false);
@@ -240,7 +240,6 @@ export default function ProjectPage() {
       .catch(() => setLoading(false));
   }, [projectId, setDeliveryLabel]);
 
-  // Sync active section when domain switches
   useEffect(() => {
     if (activeDomain === 'foundation') {
       setActiveSection('summary');
@@ -250,7 +249,6 @@ export default function ProjectPage() {
     }
   }, [activeDomain, activeDeliveryType]);
 
-  // Close delivery dropdown on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (deliveryDropdownRef.current && !deliveryDropdownRef.current.contains(e.target as Node)) {
@@ -261,7 +259,6 @@ export default function ProjectPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -297,7 +294,9 @@ export default function ProjectPage() {
   const CurrentIcon = currentSection.icon;
   const creationLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
 
-  /* ── Render section content ──────────────────────────────────────── */
+  const isFullHeight = activeSection === 'staging';
+
+  /* -- Render section content -- */
   function renderSectionContent() {
     if (activeSection === 'trash') {
       return (
@@ -320,6 +319,10 @@ export default function ProjectPage() {
       return <SummarySection projectId={projectId} />;
     }
 
+    if (activeSection === 'staging') {
+      return <StagingSection projectId={projectId} />;
+    }
+
     // Default placeholder for sections not yet built
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
@@ -339,7 +342,7 @@ export default function ProjectPage() {
 
   return (
     <div className="flex h-full">
-      {/* ── Project sidebar ──────────────────────────────────────── */}
+      {/* -- Project sidebar -- */}
       <aside className="flex w-56 flex-col border-r border-white/5 bg-[hsl(240,6%,7%)]">
         {/* Back + project title */}
         <div className="border-b border-white/5 px-3 py-3">
@@ -433,7 +436,7 @@ export default function ProjectPage() {
         </div>
       </aside>
 
-      {/* ── Main content area ────────────────────────────────────── */}
+      {/* -- Main content area -- */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Section header */}
         <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
@@ -447,7 +450,7 @@ export default function ProjectPage() {
         </div>
 
         {/* Section content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className={`flex-1 ${isFullHeight ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-6 md:p-8'}`}>
           {renderSectionContent()}
         </div>
       </div>

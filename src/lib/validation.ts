@@ -97,6 +97,12 @@ export const consolidateRequestSchema = z.object({
   wizardData: z.object({}).passthrough(),
 });
 
+export const brainstormRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).max(100),
+  projectId: z.string().min(1),
+  conceptId: z.string().min(1).optional(),
+});
+
 export function validationError() {
   return { error: 'Invalid request body' };
 }

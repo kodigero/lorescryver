@@ -30,21 +30,22 @@ enum Plan {
 // --- Projects ---
 
 model Project {
-  id            String           @id @default(cuid())
-  title         String
-  projectType   String           @default("novel")
-  status        String           @default("ideation")
-  wordCountGoal Int              @default(80000)
-  userId        String
-  parentId      String?
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent        Project?         @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children      Project[]        @relation("ProjectHierarchy")
-  chapters      Chapter[]
-  bibleEntries  BibleEntry[]
-  sections      ProjectSection[]
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id              String             @id @default(cuid())
+  title           String
+  projectType     String             @default("novel")
+  status          String             @default("ideation")
+  wordCountGoal   Int                @default(80000)
+  userId          String
+  parentId        String?
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent          Project?           @relation("ProjectHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Project[]          @relation("ProjectHierarchy")
+  chapters        Chapter[]
+  bibleEntries    BibleEntry[]
+  sections        ProjectSection[]
+  stagingConcepts StagingConcept[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([userId])
   @@index([parentId])
@@ -63,6 +64,25 @@ model ProjectSection {
 
   @@unique([projectId, key])
   @@index([projectId])
+}
+
+// --- Staging Concepts ---
+
+model StagingConcept {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String   @default("New Brainstorm")
+  summary   String   @default("") @db.Text
+  phase     String   @default("concept")
+  stage     String   @default("brainstorm")
+  tags      String[] @default([])
+  messages  Json     @default("[]")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, phase])
 }
 
 // --- Chapters ---
