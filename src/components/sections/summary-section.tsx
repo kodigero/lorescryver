@@ -125,24 +125,22 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     setWizardActive(true);
   }
 
-  async function handleNext() {
-    if (!currentStep) return;
-    const answer = currentStep.choices ? selectedChoice : textInput.trim();
-    if (!answer) return;
+  function advanceWizard(answer: string) {
+    if (!currentStep || !answer) return;
 
     if (answer === 'View Synopsis') {
       setSynopsisLoading(true);
       setShowSynopsis(true);
-      try {
-        const res = await fetch('/api/scryve/consolidate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId, wizardData, previewOnly: true }),
-        });
-        const result = await res.json();
-        setSynopsisText(res.ok && result.sections ? (result.sections['summary.synopsis'] || 'Not enough information yet.') : 'Could not generate synopsis.');
-      } catch { setSynopsisText('Something went wrong.'); }
-      finally { setSynopsisLoading(false); }
+      fetch('/api/scryve/consolidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, wizardData, previewOnly: true }),
+      })
+        .then(res => res.json().then(result => {
+          setSynopsisText(res.ok && result.sections ? (result.sections['summary.synopsis'] || 'Not enough information yet.') : 'Could not generate synopsis.');
+        }))
+        .catch(() => setSynopsisText('Something went wrong.'))
+        .finally(() => setSynopsisLoading(false));
       return;
     }
 
@@ -156,6 +154,16 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     setTextInput('');
     setLockedNotice('');
     if (!result.step) consolidate(result.data);
+  }
+
+  function handleNext() {
+    if (!currentStep) return;
+    const answer = currentStep.choices ? selectedChoice : textInput.trim();
+    advanceWizard(answer);
+  }
+
+  function handleChoiceClick(choice: string) {
+    advanceWizard(choice);
   }
 
   function handleBack() {
@@ -224,8 +232,9 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   /* -- Wizard view -- */
   if (wizardActive) {
     const isCheckpoint = currentStep?.id.startsWith('checkpoint_') || false;
+    const isChoiceStep = !!currentStep?.choices;
     const canSkip = currentStep?.id !== 'protagonist_name' && !isCheckpoint;
-    const hasAnswer = currentStep?.choices ? !!selectedChoice : !!textInput.trim();
+    const hasAnswer = isChoiceStep ? !!selectedChoice : !!textInput.trim();
 
     return (
       <div className="mx-auto max-w-xl flex flex-col h-full">
@@ -298,17 +307,13 @@ export default function SummarySection({ projectId }: { projectId: string }) {
             <h3 className="text-lg font-medium text-white mb-6">{currentStep.question}</h3>
 
             {/* Answer area */}
-            {currentStep.choices ? (
+            {isChoiceStep ? (
               <div className="space-y-2.5 mb-6">
-                {currentStep.choices.map(choice => (
+                {currentStep.choices!.map(choice => (
                   <button
                     key={choice}
-                    onClick={() => setSelectedChoice(choice)}
-                    className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all ${
-                      selectedChoice === choice
-                        ? 'border-brand-500 bg-brand-600/15 text-white'
-                        : 'border-white/[0.08] bg-white/[0.02] text-white/70 hover:border-white/20 hover:bg-white/[0.04]'
-                    }`}
+                    onClick={() => handleChoiceClick(choice)}
+                    className="w-full text-left px-4 py-3.5 rounded-xl border transition-all border-white/[0.08] bg-white/[0.02] text-white/70 hover:border-brand-500 hover:bg-brand-600/15 hover:text-white"
                   >
                     <span className="text-sm font-medium">{choice}</span>
                   </button>
@@ -349,7 +354,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
             )}
 
             {/* Scryve hint */}
-            {!isCheckpoint && (
+            {!isCheckpoint && !isChoiceStep && (
               <div className="flex items-center justify-center mb-6">
                 <button onClick={() => setScryveOpen(true)} className="flex items-center gap-1.5 text-xs text-white/30 hover:text-brand-400 transition">
                   <ScryveIcon className="h-3.5 w-3.5" />
@@ -368,7 +373,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
                 <ArrowLeftIcon className="h-3.5 w-3.5" /> Back
               </button>
               <div className="flex gap-2">
-                {canSkip && (
+                {canSkip && !isChoiceStep && (
                   <button
                     onClick={handleSkip}
                     className="px-4 py-2 text-sm text-white/40 hover:text-white/70 border border-white/[0.08] rounded-lg transition hover:border-white/20"
@@ -376,14 +381,16 @@ export default function SummarySection({ projectId }: { projectId: string }) {
                     Skip
                   </button>
                 )}
-                <button
-                  onClick={handleNext}
-                  disabled={!hasAnswer}
-                  className="flex items-center gap-1 px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg transition hover:bg-brand-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  {isCheckpoint && selectedChoice === 'Finish' ? 'Finish' : 'Next'}
-                  <ArrowRightIcon className="h-3.5 w-3.5" />
-                </button>
+                {!isChoiceStep && (
+                  <button
+                    onClick={handleNext}
+                    disabled={!hasAnswer}
+                    className="flex items-center gap-1 px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg transition hover:bg-brand-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <ArrowRightIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
