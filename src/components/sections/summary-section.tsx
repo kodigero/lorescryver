@@ -2,9 +2,9 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { SummaryCard } from './summary-card';
 import { ScryveModal } from './scryve-modal';
-import { INITIAL_DATA, NAME_STEPS, PHASES, cards, cloneData, processAnswer, type HistoryEntry, type ParsedResponse, type WizardData, type WizardStep } from '@/lib/wizard-state-machine';
+import { INITIAL_DATA, PHASES, cards, cloneData, processAnswer, type HistoryEntry, type WizardData, type WizardStep } from '@/lib/wizard-state-machine';
 
-/* ── Icons ── */
+/* -- Icons -- */
 
 function ScryveIcon({ className }: { className?: string }) {
   return (
@@ -62,7 +62,7 @@ function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
-/* ── Types ── */
+/* -- Component -- */
 
 export default function SummarySection({ projectId }: { projectId: string }) {
   const [sectionData, setSectionData] = useState<Record<string, string>>({});
@@ -76,7 +76,6 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   const [selectedChoice, setSelectedChoice] = useState('');
   const [textInput, setTextInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [isParsing, setIsParsing] = useState(false);
   const [consolidating, setConsolidating] = useState(false);
   const [consolidateError, setConsolidateError] = useState('');
 
@@ -108,15 +107,14 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   useEffect(() => {
-    if (wizardActive && currentStep && !currentStep.choices && !isParsing && !scryveOpen) {
-      const isAddInfo = currentStep.id.startsWith('add_info_');
-      setTimeout(() => isAddInfo ? textareaRef.current?.focus() : inputRef.current?.focus(), 100);
+    if (wizardActive && currentStep && !currentStep.choices && !scryveOpen) {
+      setTimeout(() => currentStep.multiline ? textareaRef.current?.focus() : inputRef.current?.focus(), 100);
     }
-  }, [currentStep, wizardActive, isParsing, scryveOpen]);
+  }, [currentStep, wizardActive, scryveOpen]);
 
   function startWizard() {
-    setCurrentStep({ id: 'protagonist_name', question: 'What is your protagonist\'s name?', placeholder: 'e.g. Kaizer de Luna' });
-    setWizardData({ ...INITIAL_DATA, characters: [], notes: [] });
+    setCurrentStep({ id: 'protagonist_name', question: 'Who is the main protagonist of the story?', placeholder: 'e.g. Kaizer de Luna' });
+    setWizardData({ ...INITIAL_DATA, notes: [] });
     setPhase(0);
     setSelectedChoice('');
     setTextInput('');
@@ -136,11 +134,10 @@ export default function SummarySection({ projectId }: { projectId: string }) {
       setSynopsisLoading(true);
       setShowSynopsis(true);
       try {
-        const cleanData = { ...wizardData, _temp: undefined };
         const res = await fetch('/api/scryve/consolidate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId, wizardData: cleanData, previewOnly: true }),
+          body: JSON.stringify({ projectId, wizardData, previewOnly: true }),
         });
         const result = await res.json();
         setSynopsisText(res.ok && result.sections ? (result.sections['summary.synopsis'] || 'Not enough information yet.') : 'Could not generate synopsis.');
@@ -151,25 +148,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
 
     setHistory(prev => [...prev, { step: currentStep!, data: cloneData(wizardData), phase }]);
 
-    let finalAnswer = answer;
-    let parsedRole: string | undefined;
-
-    if (NAME_STEPS.has(currentStep.id) && !currentStep.choices) {
-      setIsParsing(true);
-      try {
-        const res = await fetch('/api/scryve/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stepId: currentStep.id, question: currentStep.question, answer }),
-        });
-        const parsed: ParsedResponse = await res.json();
-        if (parsed.intent === 'skip') { finalAnswer = '__SKIP__'; }
-        else if (parsed.name && parsed.role) { finalAnswer = parsed.name; parsedRole = parsed.role; }
-        else if (parsed.name) { finalAnswer = parsed.name; }
-      } catch {} finally { setIsParsing(false); }
-    }
-
-    const result = processAnswer(currentStep.id, finalAnswer, wizardData, parsedRole);
+    const result = processAnswer(currentStep.id, answer, wizardData);
     setWizardData(result.data);
     setPhase(result.phase);
     setCurrentStep(result.step);
@@ -221,11 +200,10 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     setConsolidating(true);
     setConsolidateError('');
     try {
-      const cleanData = { ...data, _temp: undefined };
       const res = await fetch('/api/scryve/consolidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, wizardData: cleanData }),
+        body: JSON.stringify({ projectId, wizardData: data }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Consolidation failed');
@@ -243,12 +221,11 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     return <div className="flex h-40 items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>;
   }
 
-  /* ── Wizard view ── */
+  /* -- Wizard view -- */
   if (wizardActive) {
-    const isAddInfo = currentStep?.id.startsWith('add_info_') || false;
     const isCheckpoint = currentStep?.id.startsWith('checkpoint_') || false;
     const canSkip = currentStep?.id !== 'protagonist_name' && !isCheckpoint;
-    const hasAnswer = currentStep?.choices ? !!selectedChoice : !!(isAddInfo ? textInput.trim() : textInput.trim());
+    const hasAnswer = currentStep?.choices ? !!selectedChoice : !!textInput.trim();
 
     return (
       <div className="mx-auto max-w-xl flex flex-col h-full">
@@ -314,7 +291,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8">
             {/* Step label */}
             <p className="text-[11px] font-medium text-brand-400 uppercase tracking-wider mb-2">
-              Step {history.length + 1} — {PHASES[phase]}
+              Step {history.length + 1} &mdash; {PHASES[phase]}
             </p>
 
             {/* Question */}
@@ -337,7 +314,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
                   </button>
                 ))}
               </div>
-            ) : isAddInfo ? (
+            ) : currentStep.multiline ? (
               <div className="mb-6">
                 <textarea
                   ref={textareaRef}
@@ -371,14 +348,6 @@ export default function SummarySection({ projectId }: { projectId: string }) {
               </div>
             )}
 
-            {/* Parsing indicator */}
-            {isParsing && (
-              <div className="flex items-center gap-2 mb-4 justify-center">
-                <SpinnerIcon className="h-4 w-4 animate-spin text-brand-400" />
-                <span className="text-xs text-white/40">Processing...</span>
-              </div>
-            )}
-
             {/* Scryve hint */}
             {!isCheckpoint && (
               <div className="flex items-center justify-center mb-6">
@@ -409,7 +378,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
                 )}
                 <button
                   onClick={handleNext}
-                  disabled={!hasAnswer || isParsing}
+                  disabled={!hasAnswer}
                   className="flex items-center gap-1 px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg transition hover:bg-brand-700 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {isCheckpoint && selectedChoice === 'Finish' ? 'Finish' : 'Next'}
@@ -443,7 +412,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     );
   }
 
-  /* ── Empty state ── */
+  /* -- Empty state -- */
   if (!hasContent) {
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
@@ -452,7 +421,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         </div>
         <h2 className="text-xl font-bold">Set up your Summary</h2>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          Build your story&apos;s foundation step by step. Quick answers — Scryve does the heavy lifting.
+          Build your story&apos;s foundation step by step. Quick answers &mdash; Scryve does the heavy lifting.
         </p>
         <button onClick={startWizard} className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700">
           <ScryveIcon className="h-4 w-4" />
@@ -462,7 +431,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
     );
   }
 
-  /* ── Content view ── */
+  /* -- Content view -- */
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between mb-6">

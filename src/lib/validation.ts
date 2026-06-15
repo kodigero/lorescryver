@@ -79,10 +79,6 @@ export const assistRequestSchema = z.object({
   context: z.object({
     question: z.string().min(1).max(1000),
     choices: z.array(z.string().min(1).max(120)).max(20).optional(),
-    characters: z.array(z.object({
-      name: z.string().max(120),
-      relationship: z.string().max(120).optional().default(''),
-    })).max(100).optional(),
     protagonistName: z.string().max(120).optional(),
     protagonistGender: z.string().max(40).optional(),
     antagonistName: z.string().max(120).optional(),

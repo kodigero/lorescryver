@@ -55,7 +55,7 @@ export function ScryveModal({ isOpen, onClose, currentStep, wizardData, onLockIn
 
   useEffect(() => {
     if (isOpen) {
-      setMsgs([{ role: 'assistant', content: `Hey! Let's brainstorm. We're working on: "${currentStep.question}" — what are you thinking?` }]);
+      setMsgs([{ role: 'assistant', content: `Hey! Let me help. We are working on: "${currentStep.question}" - what are you thinking?` }]);
       setInput('');
       setTimeout(() => inputRef.current?.focus(), 200);
     }
@@ -82,8 +82,7 @@ export function ScryveModal({ isOpen, onClose, currentStep, wizardData, onLockIn
             choices: currentStep.choices,
             protagonistName: wizardData.protagonistName,
             protagonistGender: wizardData.protagonistGender,
-            antagonistName: wizardData.antagonistName,
-            characters: wizardData.characters,
+            antagonistName: wizardData.antagonist,
           },
         }),
       });

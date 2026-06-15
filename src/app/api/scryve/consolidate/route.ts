@@ -4,43 +4,25 @@ import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
 import { consolidateRequestSchema, validationError } from '@/lib/validation';
 
-interface CharEntry {
-  name: string;
-  gender: string;
-  relationship: string;
-  roles: string[];
-}
-
 interface WizardData {
   protagonistName: string;
   protagonistGender: string;
-  protagonistOccupation: string;
-  protagonistLocation: string;
-  characters: CharEntry[];
-  antagonistName: string;
-  antagonistIsCharacter: boolean;
-  antagonistGender: string;
+  supportingCharacters: string;
+  antagonist: string;
   scopeLocation: string;
   scopeTime: string;
   scopeInstallments: string;
-  conflictWant: string;
-  conflictStakes: string;
-  outlineBefore: string;
-  outlineTurning: string;
+  conflictMain: string;
+  conflictCause: string;
+  conflictReason: string;
+  conflictImportance: string;
+  conflictOutcome: string;
+  outlineBegin: string;
+  outlineConflictStart: string;
+  outlineResolution: string;
   outlineEnding: string;
   notes: string[];
 }
-
-const ROLE_LABELS: Record<string, string> = {
-  important_person: 'most important person in protagonist\'s life',
-  role_model: 'role model',
-  confidant: 'closest confidant',
-  anchor: 'emotional anchor',
-  enemy: 'most hated person',
-  antagonist: 'main antagonist',
-  antagonist_ally: 'antagonist\'s ally',
-  other: 'supporting character',
-};
 
 const ALLOWED_SECTION_KEYS = new Set([
   'summary.main_characters',
@@ -52,25 +34,25 @@ const ALLOWED_SECTION_KEYS = new Set([
 
 const SYSTEM_PROMPT = `You are Scryve, the AI narrative assistant for LoreScryver — a professional authoring platform for storytellers.
 
-You have a warm, friendly personality. You're like a trusted creative partner — supportive but honest. Write with heart, not like a machine.
+You have a warm, friendly personality. You are like a trusted creative partner — supportive but honest. Write with heart, not like a machine.
 
-Your task: take the author's raw single-word answers from a guided conversation and consolidate them into clean, structured content for their project's Summary section.
+Your task: take the author's answers from a guided wizard and consolidate them into clean, structured content for their project's Summary section.
 
 Create 5 sections:
 
-1. Main Characters — Present as a character web. Show each character's name, their role/relationship, and how they connect to others. Make the relationships feel alive and interconnected. Use correct pronouns (he/him/his for male, she/her for female).
+1. Main Characters — Present the protagonist, supporting characters, and antagonist. Show who they are and how they connect. Use correct pronouns (he/him/his for male, she/her for female).
 
-2. Scope — Where and when the story takes place. Paint the setting briefly but vividly. Include the format (standalone, trilogy, series, etc.).
+2. Scope — Where and when the story takes place. Paint the setting briefly but vividly. Include the format (standalone, series, etc.).
 
-3. Main Conflict — The central dramatic tension. What the antagonist wants (or threatens), what's at stake for the protagonist, and why it matters.
+3. Main Conflict — The central dramatic tension. What the conflict is, who or what caused it, the real reason behind it, what is at stake, and the outcome.
 
-4. Outline Overview — The story arc in three beats: the before (status quo), the turning point (what changes everything), and the ending (how it resolves).
+4. Outline Overview — The story arc in four beats: how it begins, how the conflict starts, how it is resolved, and how it ends.
 
 5. Synopsis — YOUR MOST IMPORTANT JOB. Weave ALL the information — characters, world, conflict, and plot — into a cohesive, compelling narrative summary. This should read like a friend passionately describing the story to another friend. Not a dry summary. Make it breathe.
 
 Rules:
 - Write in flowing prose, not bullet points (except for character entries in Main Characters)
-- Preserve the author's intent — don't invent major plot points
+- Preserve the author's intent — do not invent major plot points
 - Fill obvious gaps with sensible inferences (mark with [Suggestion: ...])
 - Keep it concise — this is a working document, not a pitch
 - Use he/him/his and she/her correctly based on character genders
@@ -88,17 +70,6 @@ Respond ONLY with valid JSON:
 Do not include any text before or after the JSON.`;
 
 function buildUserMessage(project: { title: string; projectType: string }, data: WizardData): string {
-  const characterLines = data.characters
-    .map((c) => {
-      const roles = c.roles.map((r) => ROLE_LABELS[r] || r).join(', ');
-      return `- ${c.name} (${c.relationship || 'relationship unknown'}) — ${roles}`;
-    })
-    .join('\n');
-
-  const antagonistType = data.antagonistIsCharacter
-    ? `${data.antagonistName} (${data.antagonistGender}, character)`
-    : `${data.antagonistName} (force/concept)`;
-
   const notesSection = data.notes && data.notes.length > 0
     ? `\nADDITIONAL NOTES:\n${data.notes.map(n => `- ${n}`).join('\n')}`
     : '';
@@ -108,13 +79,12 @@ function buildUserMessage(project: { title: string; projectType: string }, data:
 PROTAGONIST:
 - Name: ${data.protagonistName || '(not yet provided)'}
 - Gender: ${data.protagonistGender || '(not yet provided)'}
-- Occupation: ${data.protagonistOccupation || '(not yet provided)'}
-- Location: ${data.protagonistLocation || '(not yet provided)'}
 
-CHARACTERS AND RELATIONSHIPS:
-${characterLines || '(none specified yet)'}
+SUPPORTING CHARACTERS:
+${data.supportingCharacters || '(not yet provided)'}
 
-ANTAGONIST: ${data.antagonistName ? antagonistType : '(not yet provided)'}
+ANTAGONIST:
+${data.antagonist || '(not yet provided)'}
 
 SCOPE:
 - Setting: ${data.scopeLocation || '(not yet provided)'}
@@ -122,15 +92,19 @@ SCOPE:
 - Format: ${data.scopeInstallments || '(not yet provided)'}
 
 CONFLICT:
-- Antagonist wants/threatens: ${data.conflictWant || '(not yet provided)'}
-- Protagonist stands to lose: ${data.conflictStakes || '(not yet provided)'}
+- Final conflict: ${data.conflictMain || '(not yet provided)'}
+- Caused by: ${data.conflictCause || '(not yet provided)'}
+- Real reason: ${data.conflictReason || '(not yet provided)'}
+- Why it matters: ${data.conflictImportance || '(not yet provided)'}
+- Outcome: ${data.conflictOutcome || '(not yet provided)'}
 
 OUTLINE:
-- Before the conflict: ${data.outlineBefore || '(not yet provided)'}
-- Turning point: ${data.outlineTurning || '(not yet provided)'}
-- Ending: ${data.outlineEnding || '(not yet provided)'}${notesSection}
+- How it begins: ${data.outlineBegin || '(not yet provided)'}
+- How the conflict starts: ${data.outlineConflictStart || '(not yet provided)'}
+- How it is resolved: ${data.outlineResolution || '(not yet provided)'}
+- How it ends: ${data.outlineEnding || '(not yet provided)'}${notesSection}
 
-Consolidate these into 5 structured Summary sections. For any section where data is not yet provided, write what you can from available information and note what's missing.`;
+Consolidate these into 5 structured Summary sections. For any section where data is not yet provided, write what you can from available information and note what is missing.`;
 }
 
 export async function POST(request: Request) {
