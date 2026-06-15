@@ -58,6 +58,35 @@ function LayersIcon({ className }: { className?: string }) {
   );
 }
 
+function LightbulbIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+    </svg>
+  );
+}
+
+function FlaskIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+      <path d="M8.5 2h7" />
+      <path d="M7 16.5h10" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
 function BookmarkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -120,7 +149,26 @@ function SettingsIcon({ className }: { className?: string }) {
   );
 }
 
-/* -- Section definitions -- */
+/* -- Section header metadata -- */
+
+interface SectionMeta {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+}
+
+const sectionMeta: Record<string, SectionMeta> = {
+  summary: { label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project - logline, synopsis, genre, tone, and key story pillars at a glance.' },
+  staging: { label: 'Staging', icon: LayersIcon, description: 'Brainstorm and capture ideas with Scryve.' },
+  'staging-candidate': { label: 'Staging', icon: LayersIcon, description: 'Stress-test ideas against existing canon.' },
+  atlas: { label: 'Atlas', icon: MapIcon, description: 'The map of your universe - locations, regions, timelines, factions, and how they connect.' },
+  'story-bible': { label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP - characters, lore entries, rules, and everything that defines your story world.' },
+  research: { label: 'Research', icon: SearchIcon, description: 'Notes, fact-checking, historical context, and deep-dive material supporting your story.' },
+  reference: { label: 'Reference', icon: BookmarkIcon, description: 'Bookmarked inspiration, mood boards, visual references, and external links that inform your world.' },
+  trash: { label: 'Trash', icon: TrashIcon, description: 'Deleted items are kept here until permanently removed.' },
+};
+
+/* -- Delivery sections (unchanged) -- */
 
 interface Section {
   key: string;
@@ -128,15 +176,6 @@ interface Section {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 }
-
-const foundationSections: Section[] = [
-  { key: 'summary', label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project - logline, synopsis, genre, tone, and key story pillars at a glance.' },
-  { key: 'atlas', label: 'Atlas', icon: MapIcon, description: 'The map of your universe - locations, regions, timelines, factions, and how they connect.' },
-  { key: 'story-bible', label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP - characters, lore entries, rules, and everything that defines your story world.' },
-  { key: 'staging', label: 'Staging', icon: LayersIcon, description: 'Organize and sequence your narrative elements before they flow into a Creation.' },
-  { key: 'reference', label: 'Reference', icon: BookmarkIcon, description: 'Bookmarked inspiration, mood boards, visual references, and external links that inform your world.' },
-  { key: 'research', label: 'Research', icon: SearchIcon, description: 'Notes, fact-checking, historical context, and deep-dive material supporting your story.' },
-];
 
 const deliverySections: Record<string, Section[]> = {
   novel: [
@@ -220,6 +259,8 @@ export default function ProjectPage() {
   const [activeSection, setActiveSection] = useState('summary');
   const [activeDeliveryType, setActiveDeliveryType] = useState<string>('');
   const [deliveryDropdownOpen, setDeliveryDropdownOpen] = useState(false);
+  const [stagingOpen, setStagingOpen] = useState(true);
+  const [canonOpen, setCanonOpen] = useState(true);
   const deliveryDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -289,12 +330,19 @@ export default function ProjectPage() {
   }
 
   const currentDeliverySections = deliverySections[activeDeliveryType] || defaultDeliverySections;
-  const currentSections = activeDomain === 'foundation' ? foundationSections : currentDeliverySections;
-  const currentSection = currentSections.find((s) => s.key === activeSection) || currentSections[0];
-  const CurrentIcon = currentSection.icon;
   const creationLabel = projectTypeLabels[activeDeliveryType] || activeDeliveryType;
 
-  const isFullHeight = activeSection === 'staging';
+  // Resolve current section metadata
+  const meta = activeDomain === 'foundation'
+    ? sectionMeta[activeSection] || sectionMeta.summary
+    : (() => {
+        const s = currentDeliverySections.find((s) => s.key === activeSection) || currentDeliverySections[0];
+        return { label: s.label, icon: s.icon, description: s.description };
+      })();
+  const HeaderIcon = meta.icon;
+
+  const isFullHeight = activeSection === 'staging' || activeSection === 'staging-candidate';
+  const isStagingActive = activeSection === 'staging' || activeSection === 'staging-candidate';
 
   /* -- Render section content -- */
   function renderSectionContent() {
@@ -308,9 +356,7 @@ export default function ProjectPage() {
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
             Deleted items are kept here until permanently removed.
           </p>
-          <p className="mt-6 text-xs text-muted-foreground/60">
-            Trash is empty.
-          </p>
+          <p className="mt-6 text-xs text-muted-foreground/60">Trash is empty.</p>
         </div>
       );
     }
@@ -319,24 +365,41 @@ export default function ProjectPage() {
       return <SummarySection projectId={projectId} />;
     }
 
-    if (activeSection === 'staging') {
+    if (activeSection === 'staging' || activeSection === 'staging-candidate') {
       return <StagingSection projectId={projectId} />;
     }
 
-    // Default placeholder for sections not yet built
+    // Default placeholder
     return (
       <div className="mx-auto max-w-2xl py-16 text-center">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
-          <CurrentIcon className="h-8 w-8 text-brand-400" />
+          <HeaderIcon className="h-8 w-8 text-brand-400" />
         </div>
-        <h2 className="text-xl font-bold">{currentSection.label}</h2>
+        <h2 className="text-xl font-bold">{meta.label}</h2>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          {currentSection.description}
+          {meta.description}
         </p>
-        <p className="mt-6 text-xs text-muted-foreground/60">
-          This section is coming soon.
-        </p>
+        <p className="mt-6 text-xs text-muted-foreground/60">This section is coming soon.</p>
       </div>
+    );
+  }
+
+  /* -- Nav item helper -- */
+  function navBtn(key: string, Icon: React.ComponentType<{ className?: string }>, label: string, indent?: boolean) {
+    const isActive = activeSection === key;
+    return (
+      <button
+        key={key}
+        onClick={() => setActiveSection(key)}
+        className={`flex w-full items-center gap-3 rounded-lg py-2 text-sm font-medium transition ${indent ? 'pl-9 pr-3' : 'px-3'} ${
+          isActive
+            ? 'bg-brand-600/15 text-brand-400'
+            : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+        }`}
+      >
+        <Icon className="h-4 w-4" />
+        {label}
+      </button>
     );
   }
 
@@ -399,29 +462,83 @@ export default function ProjectPage() {
 
         {/* Section nav */}
         <nav className="flex-1 space-y-0.5 px-3 py-3 overflow-y-auto">
-          {currentSections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.key;
+          {activeDomain === 'foundation' ? (
+            <>
+              {/* Summary — standalone top item */}
+              {navBtn('summary', LayoutDashboardIcon, 'Summary')}
 
-            return (
-              <button
-                key={section.key}
-                onClick={() => setActiveSection(section.key)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-brand-600/15 text-brand-400'
-                    : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {section.label}
-              </button>
-            );
-          })}
+              {/* Staging group */}
+              <div className="mt-3">
+                <button
+                  onClick={() => setStagingOpen(!stagingOpen)}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    isStagingActive ? 'text-brand-400' : 'text-muted-foreground/60 hover:text-muted-foreground'
+                  }`}
+                >
+                  <ChevronDownIcon className={`h-3 w-3 transition ${stagingOpen ? '' : '-rotate-90'}`} />
+                  Staging
+                </button>
+                {stagingOpen && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {navBtn('staging', LightbulbIcon, 'Concept', true)}
+                    {navBtn('staging-candidate', FlaskIcon, 'Candidate', true)}
+                  </div>
+                )}
+              </div>
+
+              {/* Canon group */}
+              <div className="mt-3">
+                <button
+                  onClick={() => setCanonOpen(!canonOpen)}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    activeSection === 'atlas' || activeSection === 'story-bible'
+                      ? 'text-brand-400'
+                      : 'text-muted-foreground/60 hover:text-muted-foreground'
+                  }`}
+                >
+                  <ChevronDownIcon className={`h-3 w-3 transition ${canonOpen ? '' : '-rotate-90'}`} />
+                  Canon
+                </button>
+                {canonOpen && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {navBtn('atlas', MapIcon, 'Atlas', true)}
+                    {navBtn('story-bible', BookOpenIcon, 'Story Bible', true)}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            currentDeliverySections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.key;
+              return (
+                <button
+                  key={section.key}
+                  onClick={() => setActiveSection(section.key)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-brand-600/15 text-brand-400'
+                      : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {section.label}
+                </button>
+              );
+            })
+          )}
         </nav>
 
+        {/* Bottom utility items */}
+        {activeDomain === 'foundation' && (
+          <div className="border-t border-white/5 px-3 py-2 space-y-0.5">
+            {navBtn('research', SearchIcon, 'Research')}
+            {navBtn('reference', BookmarkIcon, 'Reference')}
+          </div>
+        )}
+
         {/* Trash pinned bottom */}
-        <div className="border-t border-white/5 px-3 py-2">
+        <div className={`border-t border-white/5 px-3 py-2 ${activeDomain !== 'foundation' ? '' : ''}`}>
           <button
             onClick={() => setActiveSection('trash')}
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -441,10 +558,10 @@ export default function ProjectPage() {
         {/* Section header */}
         <div className="flex items-center gap-3 border-b border-white/5 px-6 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600/15">
-            <CurrentIcon className="h-4 w-4 text-brand-400" />
+            <HeaderIcon className="h-4 w-4 text-brand-400" />
           </div>
           <div>
-            <h1 className="text-lg font-bold">{activeSection === 'trash' ? 'Trash' : currentSection.label}</h1>
+            <h1 className="text-lg font-bold">{meta.label}</h1>
             <p className="text-xs text-muted-foreground">{project.title}</p>
           </div>
         </div>
