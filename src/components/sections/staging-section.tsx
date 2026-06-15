@@ -55,8 +55,10 @@ function SpinnerIcon({ className }: { className?: string }) {
 interface ConceptSummary {
   id: string;
   title: string;
+  summary: string;
   phase: string;
   stage: string;
+  tags: string[];
   updatedAt: string;
 }
 
@@ -65,9 +67,43 @@ interface ChatMessage {
   content: string;
 }
 
+type StagingPhase = 'concept' | 'candidate';
+
+const phaseCopy: Record<StagingPhase, {
+  title: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  activeDescription: string;
+  inactivePrompt: string;
+}> = {
+  concept: {
+    title: 'Concept',
+    emptyTitle: 'Start with a spark',
+    emptyDescription: 'Brainstorm, research, and collect references with Scryve until a rough idea is strong enough to test.',
+    activeDescription: 'Brainstorm freely. Scryve will help organize scattered thoughts into a candidate-ready concept.',
+    inactivePrompt: 'Select a concept or start a new brainstorming session',
+  },
+  candidate: {
+    title: 'Candidate',
+    emptyTitle: 'No candidates yet',
+    emptyDescription: 'Promote a concept when it is ready for stress testing against canon, continuity, and future expansion.',
+    activeDescription: 'Stress-test this idea against existing direction, canon risks, and future story expansion.',
+    inactivePrompt: 'Select a candidate to continue stress testing',
+  },
+};
+
+const stageLabels: Record<string, string> = {
+  brainstorm: 'Brainstorm',
+  research: 'Research',
+  reference: 'Reference',
+  canon_stress_test: 'Canon test',
+  expansion_stress_test: 'Expansion test',
+  locked: 'Locked',
+};
+
 /* -- Component -- */
 
-export default function StagingSection({ projectId }: { projectId: string }) {
+export default function StagingSection({ projectId, phase }: { projectId: string; phase: StagingPhase }) {
   const [concepts, setConcepts] = useState<ConceptSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -78,14 +114,19 @@ export default function StagingSection({ projectId }: { projectId: string }) {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const copy = phaseCopy[phase];
+  const activeConcept = concepts.find((concept) => concept.id === activeId);
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/staging`)
+    setLoading(true);
+    setActiveId(null);
+    setMessages([]);
+    fetch(`/api/projects/${projectId}/staging?phase=${phase}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setConcepts(data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [projectId]);
+  }, [projectId, phase]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,13 +139,26 @@ export default function StagingSection({ projectId }: { projectId: string }) {
   }, [activeId, sending]);
 
   async function createConcept() {
+    if (phase !== 'concept') return;
     setCreating(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/staging`, { method: 'POST' });
+      const res = await fetch(`/api/projects/${projectId}/staging`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase: 'concept', stage: 'brainstorm' }),
+      });
       if (res.ok) {
         const concept = await res.json();
         setConcepts((prev) => [
-          { id: concept.id, title: concept.title, phase: concept.phase, stage: concept.stage, updatedAt: concept.updatedAt },
+          {
+            id: concept.id,
+            title: concept.title,
+            summary: concept.summary,
+            phase: concept.phase,
+            stage: concept.stage,
+            tags: concept.tags,
+            updatedAt: concept.updatedAt,
+          },
           ...prev,
         ]);
         setActiveId(concept.id);
@@ -127,6 +181,22 @@ export default function StagingSection({ projectId }: { projectId: string }) {
       }
     } catch {
       /* ignore */
+    }
+  }
+
+  async function promoteActiveConcept() {
+    if (!activeId || phase !== 'concept') return;
+
+    const res = await fetch(`/api/projects/${projectId}/staging/${activeId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phase: 'candidate', stage: 'canon_stress_test' }),
+    });
+
+    if (res.ok) {
+      setConcepts((prev) => prev.filter((concept) => concept.id !== activeId));
+      setActiveId(null);
+      setMessages([]);
     }
   }
 
@@ -190,18 +260,20 @@ export default function StagingSection({ projectId }: { projectId: string }) {
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/10">
           <ScryveIcon className="h-8 w-8 text-brand-400" />
         </div>
-        <h2 className="text-xl font-bold">Staging</h2>
+        <h2 className="text-xl font-bold">{copy.emptyTitle}</h2>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
-          The forge where ideas are born, tested, and refined into canon. Start a brainstorming session with Scryve to capture your first concept.
+          {copy.emptyDescription}
         </p>
-        <button
-          onClick={createConcept}
-          disabled={creating}
-          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
-        >
-          {creating ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : <ScryveIcon className="h-4 w-4" />}
-          Start Brainstorming
-        </button>
+        {phase === 'concept' && (
+          <button
+            onClick={createConcept}
+            disabled={creating}
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
+          >
+            {creating ? <SpinnerIcon className="h-4 w-4 animate-spin" /> : <ScryveIcon className="h-4 w-4" />}
+            Start Brainstorming
+          </button>
+        )}
       </div>
     );
   }
@@ -212,14 +284,19 @@ export default function StagingSection({ projectId }: { projectId: string }) {
       {/* Concept list sidebar */}
       <div className="w-60 flex flex-col border-r border-white/[0.06] bg-white/[0.02] shrink-0">
         <div className="p-3 border-b border-white/[0.06]">
-          <button
-            onClick={createConcept}
-            disabled={creating}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
-          >
-            {creating ? <SpinnerIcon className="h-3.5 w-3.5 animate-spin" /> : <PlusIcon className="h-3.5 w-3.5" />}
-            New Session
-          </button>
+          <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            {copy.title}
+          </p>
+          {phase === 'concept' && (
+            <button
+              onClick={createConcept}
+              disabled={creating}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
+            >
+              {creating ? <SpinnerIcon className="h-3.5 w-3.5 animate-spin" /> : <PlusIcon className="h-3.5 w-3.5" />}
+              New Session
+            </button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           {concepts.map((concept) => (
@@ -240,7 +317,7 @@ export default function StagingSection({ projectId }: { projectId: string }) {
                 </p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="inline-block rounded-full bg-brand-600/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-400">
-                    {concept.phase}
+                    {stageLabels[concept.stage] || concept.stage}
                   </span>
                 </div>
               </div>
@@ -263,6 +340,25 @@ export default function StagingSection({ projectId }: { projectId: string }) {
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {activeId ? (
           <>
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {activeConcept?.title || copy.title}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {copy.activeDescription}
+                </p>
+              </div>
+              {phase === 'concept' && (
+                <button
+                  onClick={promoteActiveConcept}
+                  className="ml-4 shrink-0 rounded-lg border border-brand-500/40 bg-brand-600/10 px-3 py-1.5 text-xs font-medium text-brand-300 transition hover:bg-brand-600/20"
+                >
+                  Promote to Candidate
+                </button>
+              )}
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((msg, i) => (
@@ -326,7 +422,7 @@ export default function StagingSection({ projectId }: { projectId: string }) {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">Select a session or start a new one</p>
+            <p className="text-sm text-muted-foreground">{copy.inactivePrompt}</p>
           </div>
         )}
       </div>

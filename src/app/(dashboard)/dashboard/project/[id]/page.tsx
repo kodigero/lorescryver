@@ -150,8 +150,8 @@ interface SectionMeta {
 
 const sectionMeta: Record<string, SectionMeta> = {
   summary: { label: 'Summary', icon: LayoutDashboardIcon, description: 'A high-level overview of your project - logline, synopsis, genre, tone, and key story pillars at a glance.' },
-  staging: { label: 'Staging', icon: LayersIcon, description: 'Brainstorm and capture ideas with Scryve.' },
-  'staging-candidate': { label: 'Staging', icon: LayersIcon, description: 'Stress-test ideas against existing canon.' },
+  staging: { label: 'Concept', icon: LayersIcon, description: 'Brainstorm, research, and collect references with Scryve before an idea becomes a candidate.' },
+  'staging-candidate': { label: 'Candidate', icon: LayersIcon, description: 'Stress-test ideas against existing canon and future expansion before they become official.' },
   atlas: { label: 'Atlas', icon: MapIcon, description: 'The map of your universe - locations, regions, timelines, factions, and how they connect.' },
   'story-bible': { label: 'Story Bible', icon: BookOpenIcon, description: 'The canonical reference for your IP - characters, lore entries, rules, and everything that defines your story world.' },
   research: { label: 'Research', icon: SearchIcon, description: 'Notes, fact-checking, historical context, and deep-dive material supporting your story.' },
@@ -356,8 +356,12 @@ export default function ProjectPage() {
       return <SummarySection projectId={projectId} />;
     }
 
-    if (activeSection === 'staging' || activeSection === 'staging-candidate') {
-      return <StagingSection projectId={projectId} />;
+    if (activeSection === 'staging') {
+      return <StagingSection projectId={projectId} phase="concept" />;
+    }
+
+    if (activeSection === 'staging-candidate') {
+      return <StagingSection projectId={projectId} phase="candidate" />;
     }
 
     // Default placeholder

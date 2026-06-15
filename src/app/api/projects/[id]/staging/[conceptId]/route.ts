@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import {
+  isValidStagingPhaseStage,
+  updateStagingConceptSchema,
+  validationError,
+} from '@/lib/validation';
 
 // GET - get concept with messages
 export async function GET(
@@ -38,17 +43,19 @@ export async function PUT(
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await request.json().catch(() => null);
-  if (!body) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+  const parsed = updateStagingConceptSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json(validationError(), { status: 400 });
+
+  const nextPhase = parsed.data.phase ?? existing.phase;
+  const nextStage = parsed.data.stage ?? existing.stage;
+  if (!isValidStagingPhaseStage(nextPhase, nextStage)) {
+    return NextResponse.json(validationError(), { status: 400 });
+  }
 
   const concept = await prisma.stagingConcept.update({
     where: { id: conceptId },
     data: {
-      ...(body.title !== undefined && { title: String(body.title).slice(0, 200) }),
-      ...(body.summary !== undefined && { summary: String(body.summary) }),
-      ...(body.phase !== undefined && { phase: String(body.phase) }),
-      ...(body.stage !== undefined && { stage: String(body.stage) }),
-      ...(body.messages !== undefined && { messages: body.messages }),
-      ...(body.tags !== undefined && { tags: body.tags }),
+      ...parsed.data,
     },
   });
 

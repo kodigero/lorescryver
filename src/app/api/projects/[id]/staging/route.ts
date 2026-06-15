@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import {
+  createStagingConceptSchema,
+  isValidStagingPhaseStage,
+  stagingPhaseStageMap,
+  stagingPhases,
+  validationError,
+} from '@/lib/validation';
 
 // GET /api/projects/:id/staging - list all concepts
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -14,8 +21,11 @@ export async function GET(
   const project = await prisma.project.findFirst({ where: { id, userId: user.id } });
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const requestedPhase = new URL(request.url).searchParams.get('phase');
+  const phase = stagingPhases.find((value) => value === requestedPhase);
+
   const concepts = await prisma.stagingConcept.findMany({
-    where: { projectId: id },
+    where: { projectId: id, ...(phase && { phase }) },
     select: { id: true, title: true, summary: true, phase: true, stage: true, tags: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
   });
@@ -25,7 +35,7 @@ export async function GET(
 
 // POST /api/projects/:id/staging - create a new concept
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -35,12 +45,23 @@ export async function POST(
   const project = await prisma.project.findFirst({ where: { id, userId: user.id } });
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const parsed = createStagingConceptSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) return NextResponse.json(validationError(), { status: 400 });
+
+  const phase = parsed.data.phase;
+  const stage = parsed.data.stage ?? stagingPhaseStageMap[phase][0];
+  if (!isValidStagingPhaseStage(phase, stage)) {
+    return NextResponse.json(validationError(), { status: 400 });
+  }
+
   const greeting = { role: 'assistant', content: 'Hey there! What is on your mind? I am ready to brainstorm with you.' };
 
   const concept = await prisma.stagingConcept.create({
     data: {
       projectId: id,
       title: 'New Brainstorm',
+      phase,
+      stage,
       messages: [greeting],
     },
   });

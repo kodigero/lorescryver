@@ -74,6 +74,33 @@ const chatMessageSchema = z.object({
   content: z.string().min(1).max(8000),
 });
 
+export const stagingPhases = ['concept', 'candidate', 'canon'] as const;
+export const stagingStages = [
+  'brainstorm',
+  'research',
+  'reference',
+  'canon_stress_test',
+  'expansion_stress_test',
+  'locked',
+] as const;
+
+export type StagingPhase = typeof stagingPhases[number];
+export type StagingStage = typeof stagingStages[number];
+
+export const stagingPhaseStageMap: Record<StagingPhase, readonly StagingStage[]> = {
+  concept: ['brainstorm', 'research', 'reference'],
+  candidate: ['canon_stress_test', 'expansion_stress_test'],
+  canon: ['locked'],
+};
+
+export function isValidStagingPhaseStage(
+  phase: string,
+  stage: string
+) {
+  const allowedStages = stagingPhaseStageMap[phase as StagingPhase];
+  return Boolean(allowedStages?.includes(stage as StagingStage));
+}
+
 export const assistRequestSchema = z.object({
   messages: z.array(chatMessageSchema).max(30),
   context: z.object({
@@ -101,6 +128,22 @@ export const brainstormRequestSchema = z.object({
   messages: z.array(chatMessageSchema).max(100),
   projectId: z.string().min(1),
   conceptId: z.string().min(1).optional(),
+});
+
+export const createStagingConceptSchema = z.object({
+  phase: z.enum(stagingPhases).optional().default('concept'),
+  stage: z.enum(stagingStages).optional(),
+});
+
+export const updateStagingConceptSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  summary: z.string().max(20000).optional(),
+  phase: z.enum(stagingPhases).optional(),
+  stage: z.enum(stagingStages).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+  messages: z.array(chatMessageSchema).max(100).optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field is required',
 });
 
 export function validationError() {
