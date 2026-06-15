@@ -24,8 +24,17 @@ export function SummaryCard({ card, projectId, initialContent }: { card: CardDef
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef(initialContent);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { setValue(initialContent); lastSavedRef.current = initialContent; }, [initialContent]);
+
+  /* Auto-resize textarea to fit content */
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, [value]);
 
   const save = useCallback(async (text: string) => {
     if (text === lastSavedRef.current) return;
@@ -51,9 +60,16 @@ export function SummaryCard({ card, projectId, initialContent }: { card: CardDef
         </div>
       </div>
       <div className="px-5 py-4">
-        <textarea value={value} onChange={(e) => handleChange(e.target.value)} onBlur={handleBlur} placeholder={card.placeholder} rows={card.rows} className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 leading-relaxed focus:outline-none" />
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => handleChange(e.target.value)}
+          onBlur={handleBlur}
+          placeholder={card.placeholder}
+          rows={card.rows}
+          className="w-full resize-none overflow-hidden bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 leading-relaxed focus:outline-none"
+        />
       </div>
     </div>
   );
 }
-
