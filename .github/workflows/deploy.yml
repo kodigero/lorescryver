@@ -4,19 +4,15 @@ on:
   push:
     branches: [main]
 
-env:
-  # Opt GitHub-hosted JavaScript actions into Node 24 without changing the app build/runtime Node version.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
