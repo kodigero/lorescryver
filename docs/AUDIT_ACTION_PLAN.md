@@ -8,15 +8,15 @@
 
 ## Current Remediation Status
 
-The audit remediation work is implemented on branch `codex/audit-remediation-hardening` and opened as draft PR #1:
+The audit remediation work was merged through PR #1:
 
 https://github.com/kodigero/lorescryver/pull/1
 
-For takeover context, production secret assumptions, validation results, and remaining next steps, see:
+GitHub is the source of truth for current project state. Before using this historical audit baseline, refresh `origin/main`, PRs, issues, and Actions status. For takeover context, production secret assumptions, validation results, and remaining next steps, see:
 
 `docs/CLAUDE_COWORK_TAKEOVER.md`
 
-The issue list below is the original audit baseline. It is intentionally preserved for historical context and should be read together with the takeover document.
+The issue list below is the original audit baseline. It is intentionally preserved for historical context and should be read together with the takeover document and current GitHub state.
 
 ---
 
