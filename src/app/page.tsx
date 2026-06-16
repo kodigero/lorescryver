@@ -672,7 +672,7 @@ export default async function LandingPage() {
               <a href="#pricing" className="transition hover:text-foreground">Pricing</a>
             </div>
             <p className="text-sm text-muted-foreground">
-              &copy; 2026 LoreScryver. All rights reserved.
+              &copy; {new Date().getFullYear()} LoreScryver. All rights reserved.
             </p>
           </div>
         </div>
