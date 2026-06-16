@@ -110,6 +110,21 @@ services:
     networks:
       - internal
 
+  migration:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - migration
+    networks:
+      - internal
+
+
 volumes:
   pgdata:
   pgbackups:

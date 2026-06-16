@@ -65,8 +65,13 @@ jobs:
             EOF
             chmod 600 .env.secrets
 
-            # Build and recreate containers
-            docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets build app
+            # Build app and migration containers
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets build app migration
+
+            # Run migrations using the builder image before updating the app container
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets run --rm migration npx prisma migrate deploy
+
+            # Recreate containers with new code
             docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets up -d --force-recreate
 
             # Clean up old dangling images
