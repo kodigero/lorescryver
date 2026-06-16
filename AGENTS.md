@@ -1,6 +1,6 @@
 # AGENTS.md — LoreScryver AI Development Constitution
 
-> **Version:** 1.0.0 | **Last Updated:** June 16, 2026
+> **Version:** 1.1.0 | **Last Updated:** June 16, 2026
 > **Author:** AC Kodigero | **Enforced By:** All AI development platforms
 >
 > This document is the **single source of truth** for how AI development partners
@@ -75,7 +75,8 @@ docs: update README tech stack to match reality
 | AI | DeepSeek via raw fetch | `src/lib/deepseek.ts` |
 | Styling | Tailwind CSS v3 | CSS custom properties for theming |
 | Deployment | Docker + Caddy on Hetzner | CI/CD via GitHub Actions |
-| Runtime | Node.js 24 | Pinned in `package.json` engines |
+| Cache/Sessions | Redis 7 | Rate limiting, session store |
+| Runtime | Node.js 20 | Pinned in CI, Dockerfile, and `package.json` engines |
 
 ### Key Architecture Rules
 1. **Server Components by default.** Only use `'use client'` when you need
@@ -162,10 +163,19 @@ src/
 
 ### How to Communicate
 1. **Be concise.** Don't repeat what the code says — explain *why*.
-2. **Use markdown formatting** — headers, tables, code blocks.
-3. **Link to files** when referencing code.
-4. **Show before/after diffs** for proposed changes.
-5. **Ask before making architectural decisions.** The owner decides direction.
+2. **Never show code snippets from a file that needs editing.** Always provide
+   the **complete file contents** so the owner can copy-paste the entire thing.
+   The owner should never have to search for which line to replace.
+3. **Don't bother the owner with code internals.** Complete the action until the
+   results are visible. Show outcomes, not implementation details.
+4. **One question at a time.** Never ask multiple questions in a single message.
+   Each question should be answerable with a single word.
+5. **Be direct.** Don't ask vague or open-ended questions.
+6. **Don't ask questions with obvious answers.**
+7. **Use he/him or she/her for individuals.** Only use they/their for groups
+   or organizations.
+8. **Use markdown formatting** — headers, tables, code blocks.
+9. **Link to files** when referencing code.
 
 ### What to Do
 - ✅ Check GitHub `main` for the latest state before starting.
@@ -177,6 +187,7 @@ src/
 - ✅ Preserve existing comments and docstrings unrelated to your changes.
 - ✅ Create or update tests when adding/modifying logic.
 - ✅ Ask when unsure — especially about product decisions, pricing, UX.
+- ✅ Always provide full file contents when the owner needs to manually edit.
 
 ### What NOT to Do
 - ❌ **Never change the owner's product vision** without explicit approval.
@@ -191,6 +202,7 @@ src/
 - ❌ **Never hardcode secrets, URLs, or environment-specific values.**
 - ❌ **Never commit `.env` files** or expose secrets in code.
 - ❌ **Never force-push to `main`.**
+- ❌ **Never give partial code snippets** when a full file replacement is needed.
 
 ---
 
@@ -214,9 +226,10 @@ These are **non-negotiable**. Breaking these requires stopping and asking the ow
 ## 7. Environment & Setup
 
 ### Prerequisites
-- Node.js 24+
+- Node.js 20+
 - Docker & Docker Compose
 - PostgreSQL (via Docker or local)
+- Redis (via Docker or local)
 
 ### Local Development
 ```bash
@@ -229,10 +242,10 @@ npm ci
 cp .env.example .env
 # Edit .env with your values
 
-# 3. Database
-docker compose up -d db       # Start Postgres
-npx prisma migrate deploy     # Run migrations
-npx prisma generate           # Generate client
+# 3. Database + Redis
+docker compose up -d db redis  # Start Postgres and Redis
+npx prisma migrate deploy      # Run migrations
+npx prisma generate            # Generate client
 
 # 4. Run
 npm run dev
@@ -243,9 +256,11 @@ npm run dev
 npm run dev           # Start dev server
 npm run build         # Production build
 npm run lint          # ESLint check
-npx tsc --noEmit      # Type check
+npm run typecheck     # Type check
+npm run test          # Run tests (Vitest)
 npx prisma studio     # Database GUI
 npx prisma migrate dev --name <name>  # Create migration
+npm run format        # Format with Prettier
 ```
 
 ---
@@ -260,7 +275,7 @@ npx prisma migrate dev --name <name>  # Create migration
 | **Staging** | The brainstorming/ideation space where concepts are developed with AI |
 | **Bible / Story Bible** | The reference document for a story's world, characters, rules |
 | **Summary Wizard** | The guided flow that builds a story concept step-by-step |
-| **Concept** | A staging-area idea being developed (has phases: brainstorm → develop → refine) |
+| **Concept** | A staging-area idea being developed (has phases: concept, candidate, canon) |
 | **Pipeline** | The full authoring workflow: Ideate → Draft → Edit → Compile → Publish |
 | **Section** | A part of the project workspace (Summary, Atlas, Bible, Editor, etc.) |
 
@@ -271,24 +286,24 @@ npx prisma migrate dev --name <name>  # Create migration
 > This section should be kept current by any AI platform making changes.
 
 ### Current Known Issues (as of June 16, 2026)
-1. No session revocation mechanism
-2. No rate limiting on any endpoint
-3. No tests (zero coverage)
-4. Icon components duplicated across 8+ files
-5. 4 monolith components (500+ lines each)
-6. Type definitions don't match Prisma schema
-7. Global Scryve panel uses simulated responses (not real AI)
-8. No error/loading boundaries in the app
-9. Dashboard is not mobile-responsive
-10. Most pipeline phases are stubs (Bible, Editor, Compile, Review, Publish)
+1. Most pipeline phases are stubs (Bible, Editor, Compile, Review, Publish)
+2. Global Scryve panel uses simulated responses (not real AI)
+3. No error/loading boundaries in the app
+4. Dashboard is not mobile-responsive
+5. Some monolith components exceed 200 lines
+
+### Recently Resolved
+- ✅ Session revocation — Redis-based session tracking added
+- ✅ Rate limiting — Redis-based sliding window on auth + AI endpoints
+- ✅ Tests — Vitest configured with initial validation test suite
+- ✅ Icon duplication — Replaced with lucide-react imports
+- ✅ Type definitions — Prisma enums now used for project types, phases, stages
 
 ### Placeholder Directories (Planned Features)
 - `src/components/bible/` — Story Bible feature
 - `src/components/editor/` — Chapter editor (Tiptap)
 - `src/components/ideation/` — Ideation tools
 - `src/components/publish/` — Publishing pipeline
-- `src/hooks/` — Custom React hooks
-- `src/services/` — Business logic layer
 
 ---
 
@@ -298,10 +313,8 @@ Since multiple AI platforms work on this project:
 
 1. **GitHub is the coordination point.** Always pull before working, push when done.
 2. **This file (`AGENTS.md`) is the shared constitution.** All platforms follow it.
-3. **The Claude Cowork takeover doc** (`docs/CLAUDE_COWORK_TAKEOVER.md`) provides
-   historical context but should NOT override this constitution.
-4. **Each platform should note its contributions** in commit messages.
-5. **If two platforms conflict on approach**, the owner (AC Kodigero) decides.
+3. **Each platform should note its contributions** in commit messages.
+4. **If two platforms conflict on approach**, the owner (AC Kodigero) decides.
 
 ---
 
