@@ -82,4 +82,8 @@ jobs:
               sleep 2
             done
 
+            echo "Printing container logs for debugging:"
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets logs app
+
             echo "Deployed successfully!"
+
