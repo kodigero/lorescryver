@@ -62,6 +62,7 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            REDIS_URL=redis://:${{ secrets.REDIS_PASSWORD }}@redis:6379
             EOF
             chmod 600 .env.secrets
 
