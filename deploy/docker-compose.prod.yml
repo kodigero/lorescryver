@@ -97,11 +97,10 @@ services:
     volumes:
       - pgbackups:/backups
     command: >
-      sh -c 'while true; do
-        pg_dump -h db -U lorescryver -d lorescryver -Fc -f /backups/lorescryver-$$(date +%Y%m%d-%H%M%S).dump;
-        find /backups -type f -name "*.dump" -mtime +14 -delete;
-        sleep 86400;
-      done'
+      sh -c '
+      echo "0 3 * * * pg_dump -h db -U lorescryver -d lorescryver -Fc -f /backups/lorescryver-\$$(date +\\%Y\\%m\\%d-\\%H\\%M\\%S).dump && find /backups -type f -name \"*.dump\" -mtime +14 -delete" > /etc/crontabs/root;
+      crond -f -d 8
+      '
     mem_limit: 256m
     logging:
       driver: json-file
