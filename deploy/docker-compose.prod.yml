@@ -4,7 +4,9 @@ services:
       context: ..
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: ../.env
+    env_file:
+      - ../.env
+      - ../.env.secrets
     depends_on:
       db:
         condition: service_healthy
@@ -115,7 +117,9 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: builder
-    env_file: ../.env
+    env_file:
+      - ../.env
+      - ../.env.secrets
     depends_on:
       db:
         condition: service_healthy
