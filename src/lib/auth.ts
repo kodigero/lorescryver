@@ -1,9 +1,8 @@
-// NextAuth configuration — to be implemented
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
+import { getAuthSecret, SESSION_COOKIE } from './auth-shared';
 
-const SESSION_COOKIE = 'lorescryver_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const PASSWORD_ITERATIONS = 210000;
 const PASSWORD_KEY_LENGTH = 32;
@@ -14,14 +13,6 @@ type SessionPayload = {
   exp: number;
 };
 
-function getAuthSecret() {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (secret) return secret;
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('AUTH_SECRET is required in production');
-  }
-  return 'local-development-auth-secret-change-before-production';
-}
 
 function base64UrlEncode(value: Buffer | string) {
   return Buffer.from(value).toString('base64url');
