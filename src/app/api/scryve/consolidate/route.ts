@@ -3,26 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
 import { consolidateRequestSchema, validationError } from '@/lib/validation';
+import { sanitizeObjectForPrompt } from '@/lib/sanitize';
+import type { WizardData } from '@/lib/wizard-state-machine';
 
-interface WizardData {
-  protagonistName: string;
-  protagonistGender: string;
-  supportingCharacters: string;
-  antagonist: string;
-  scopeLocation: string;
-  scopeTime: string;
-  scopeInstallments: string;
-  conflictMain: string;
-  conflictCause: string;
-  conflictReason: string;
-  conflictImportance: string;
-  conflictOutcome: string;
-  outlineBegin: string;
-  outlineConflictStart: string;
-  outlineResolution: string;
-  outlineEnding: string;
-  notes: string[];
-}
 
 const ALLOWED_SECTION_KEYS = new Set([
   'summary.main_characters',
@@ -117,11 +100,10 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(validationError(), { status: 400 });
   }
-  const { projectId, wizardData, previewOnly } = parsed.data as unknown as {
-    projectId: string;
-    wizardData: WizardData;
-    previewOnly: boolean;
-  };
+  const { projectId, wizardData: rawWizardData, previewOnly } = parsed.data;
+
+  // Sanitize all user-provided wizard data before injecting into AI prompt
+  const wizardData = sanitizeObjectForPrompt(rawWizardData);
 
   try {
     const project = await prisma.project.findFirst({

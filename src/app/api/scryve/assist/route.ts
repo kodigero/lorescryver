@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
 import { assistRequestSchema, validationError } from '@/lib/validation';
+import { sanitizeForPrompt } from '@/lib/sanitize';
 
 export async function POST(req: Request) {
   try {
@@ -16,14 +17,20 @@ export async function POST(req: Request) {
     }
     const { messages, context } = parsed.data;
 
+    // Sanitize user-provided context before injecting into AI prompt
+    const safeQuestion = sanitizeForPrompt(context.question);
+    const safeName = context.protagonistName ? sanitizeForPrompt(context.protagonistName) : '';
+    const safeGender = context.protagonistGender ? sanitizeForPrompt(context.protagonistGender) : '';
+    const safeAntagonist = context.antagonistName ? sanitizeForPrompt(context.antagonistName) : '';
+
     const choicesInfo = context.choices
       ? `\nAVAILABLE CHOICES: ${context.choices.join(', ')}. The locked-in answer MUST be one of these exact values.`
       : '';
 
     const systemPrompt = `You are Scryve, a warm and friendly story-building assistant for LoreScryver. You are helping an author brainstorm for a specific step in their story wizard.
 
-CURRENT STEP: "${context.question}"
-${context.protagonistName ? `Protagonist: ${context.protagonistName}${context.protagonistGender ? ` (${context.protagonistGender})` : ''}` : ''}${context.antagonistName ? `\nAntagonist: ${context.antagonistName}` : ''}${choicesInfo}
+CURRENT STEP: "${safeQuestion}"
+${safeName ? `Protagonist: ${safeName}${safeGender ? ` (${safeGender})` : ''}` : ''}${safeAntagonist ? `\nAntagonist: ${safeAntagonist}` : ''}${choicesInfo}
 
 YOUR RULES:
 1. Stay STRICTLY on topic. If the author drifts, gently steer back: "That is interesting, but let us focus on the current question first!"

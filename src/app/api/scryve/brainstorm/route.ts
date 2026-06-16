@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/deepseek';
 import { brainstormRequestSchema, validationError } from '@/lib/validation';
+import { sanitizeForPrompt } from '@/lib/sanitize';
 
 export async function POST(req: Request) {
   try {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     });
     const summaryMap: Record<string, string> = {};
     for (const s of sections) {
-      if (s.content.trim()) summaryMap[s.key] = s.content;
+      if (s.content.trim()) summaryMap[s.key] = sanitizeForPrompt(s.content);
     }
 
     let projectContext = '';

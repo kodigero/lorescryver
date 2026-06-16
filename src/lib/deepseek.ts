@@ -59,8 +59,11 @@ export async function chatCompletion(
   }).finally(() => clearTimeout(timeout));
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`DeepSeek API error (${response.status}): ${error}`);
+    // Read error body but never log it raw — it may contain the API key
+    const errorBody = await response.text().catch(() => 'Unable to read error body');
+    const safeError = errorBody.slice(0, 200).replace(/sk-[a-zA-Z0-9]+/g, '[REDACTED]');
+    console.error(`DeepSeek API error (${response.status}): ${safeError}`);
+    throw new Error(`AI service error (${response.status}). Please try again.`);
   }
 
   const data: DeepSeekResponse = await response.json();

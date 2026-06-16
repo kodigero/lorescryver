@@ -5,9 +5,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
+      // Add specific domains as needed (e.g., CDN, avatar service)
+      // Never use hostname: '**' — it's an SSRF risk
+      { protocol: 'https', hostname: 'lorescryver.com' },
+      { protocol: 'https', hostname: '*.lorescryver.com' },
     ],
   },
+
   async headers() {
     return [
       {
