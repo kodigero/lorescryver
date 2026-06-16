@@ -109,7 +109,7 @@ export const assistRequestSchema = z.object({
     protagonistName: z.string().max(120).optional(),
     protagonistGender: z.string().max(40).optional(),
     antagonistName: z.string().max(120).optional(),
-  }).passthrough(),
+  }),
 });
 
 export const parseRequestSchema = z.object({
@@ -118,10 +118,32 @@ export const parseRequestSchema = z.object({
   answer: z.string().min(1).max(4000),
 });
 
+const wizardStringField = z.string().max(4000).optional().default('');
+
+export const wizardDataSchema = z.object({
+  protagonistName: wizardStringField,
+  protagonistGender: wizardStringField,
+  supportingCharacters: wizardStringField,
+  antagonist: wizardStringField,
+  scopeLocation: wizardStringField,
+  scopeTime: wizardStringField,
+  scopeInstallments: wizardStringField,
+  conflictMain: wizardStringField,
+  conflictCause: wizardStringField,
+  conflictReason: wizardStringField,
+  conflictImportance: wizardStringField,
+  conflictOutcome: wizardStringField,
+  outlineBegin: wizardStringField,
+  outlineConflictStart: wizardStringField,
+  outlineResolution: wizardStringField,
+  outlineEnding: wizardStringField,
+  notes: z.array(z.string().max(4000)).max(20).optional().default([]),
+});
+
 export const consolidateRequestSchema = z.object({
   projectId: z.string().min(1),
   previewOnly: z.boolean().optional().default(false),
-  wizardData: z.object({}).passthrough(),
+  wizardData: wizardDataSchema,
 });
 
 export const brainstormRequestSchema = z.object({

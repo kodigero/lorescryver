@@ -62,6 +62,6 @@ ${isNameStep ? `This is a CHARACTER NAME question. The user should provide a nam
     }
   } catch (err) {
     console.error('Parse error:', err);
-    return NextResponse.json({ intent: 'answer', name: undefined, value: undefined });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -99,7 +99,10 @@ export function processAnswer(stepId: string, answer: string, data: WizardData):
   switch (stepId) {
     // -- Characters (Phase 0) --
     case 'protagonist_name': {
-      if (answer === '__SKIP__') return { data: d, step: { id: 'protagonist_name', question: 'Who is the main protagonist of the story?', placeholder: 'e.g. Kaizer de Luna' }, phase: 0 };
+      if (answer === '__SKIP__') {
+        d.protagonistName = 'Unnamed Protagonist';
+        return { data: d, step: { id: 'protagonist_gender', question: 'Is the protagonist male or female?', placeholder: '', choices: ['Male', 'Female'] }, phase: 0 };
+      }
       d.protagonistName = answer;
       return { data: d, step: { id: 'protagonist_gender', question: `Is ${answer} male or female?`, placeholder: '', choices: ['Male', 'Female'] }, phase: 0 };
     }
@@ -116,6 +119,7 @@ export function processAnswer(stepId: string, answer: string, data: WizardData):
       return { data: d, step: { id: 'checkpoint_characters', question: 'Characters complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] }, phase: 0 };
     }
     case 'checkpoint_characters': {
+      if (answer === 'View Synopsis') return { data: d, step: { id: 'checkpoint_characters', question: 'Characters complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Scope'] }, phase: 0 };
       if (answer === 'Add More') return { data: d, step: { id: 'add_info_characters', question: 'What else should I know about the characters?', placeholder: 'Type anything you want to add...', multiline: true }, phase: 0 };
       return { data: d, step: { id: 'scope_location', question: 'Where does the story take place?', placeholder: 'e.g. Tokyo, Mars, Winterfell...' }, phase: 1 };
     }
@@ -138,6 +142,7 @@ export function processAnswer(stepId: string, answer: string, data: WizardData):
       return { data: d, step: { id: 'checkpoint_scope', question: 'Scope complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] }, phase: 1 };
     }
     case 'checkpoint_scope': {
+      if (answer === 'View Synopsis') return { data: d, step: { id: 'checkpoint_scope', question: 'Scope complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Conflict'] }, phase: 1 };
       if (answer === 'Add More') return { data: d, step: { id: 'add_info_scope', question: 'What else about the world?', placeholder: 'Type anything you want to add...', multiline: true }, phase: 1 };
       return { data: d, step: { id: 'conflict_main', question: `What is the final conflict that ${n} needs to resolve?`, placeholder: 'e.g. overthrow the tyrant, survive the plague...' }, phase: 2 };
     }
@@ -168,6 +173,7 @@ export function processAnswer(stepId: string, answer: string, data: WizardData):
       return { data: d, step: { id: 'checkpoint_conflict', question: 'Conflict complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] }, phase: 2 };
     }
     case 'checkpoint_conflict': {
+      if (answer === 'View Synopsis') return { data: d, step: { id: 'checkpoint_conflict', question: 'Conflict complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Next: Outline'] }, phase: 2 };
       if (answer === 'Add More') return { data: d, step: { id: 'add_info_conflict', question: 'What else about the conflict?', placeholder: 'Type anything you want to add...', multiline: true }, phase: 2 };
       return { data: d, step: { id: 'outline_begin', question: 'How does the story begin?', placeholder: 'e.g. a peaceful village, a funeral, a heist gone wrong...' }, phase: 3 };
     }
@@ -194,6 +200,7 @@ export function processAnswer(stepId: string, answer: string, data: WizardData):
       return { data: d, step: { id: 'checkpoint_outline', question: 'Outline complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] }, phase: 3 };
     }
     case 'checkpoint_outline': {
+      if (answer === 'View Synopsis') return { data: d, step: { id: 'checkpoint_outline', question: 'Outline complete! What would you like to do?', placeholder: '', choices: ['View Synopsis', 'Add More', 'Finish'] }, phase: 3 };
       if (answer === 'Add More') return { data: d, step: { id: 'add_info_outline', question: 'What else about the plot?', placeholder: 'Type anything you want to add...', multiline: true }, phase: 3 };
       return { data: d, step: null, phase: 4 };
     }
