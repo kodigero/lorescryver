@@ -1,4 +1,8 @@
-lorescryver.com, www.lorescryver.com {
+www.lorescryver.com {
+    redir https://lorescryver.com{uri} permanent
+}
+
+lorescryver.com {
     header {
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
@@ -7,6 +11,6 @@ lorescryver.com, www.lorescryver.com {
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
     }
 
-    reverse_proxy app:3000
     encode gzip
+    reverse_proxy app:3000
 }

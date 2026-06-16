@@ -21,8 +21,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install Prisma CLI (pinned to v6) for migrate deploy
-RUN npm install -g prisma@6
+# Copy Prisma CLI from deps (no global install needed)
+COPY --from=deps /app/node_modules/.bin/prisma /usr/local/bin/prisma
+COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

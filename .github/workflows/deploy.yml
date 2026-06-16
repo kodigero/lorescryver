@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -54,14 +58,21 @@ jobs:
             grep -q '^DB_PASSWORD=' .env && sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|" .env || echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             grep -q '^AUTH_SECRET=' .env && sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=${{ secrets.AUTH_SECRET }}|" .env || echo "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" >> .env
 
-            # Stop any old containers from previous compose setups
-            docker compose down 2>/dev/null || true
-
-            # Build fresh (no cache) and recreate containers
-            docker compose -f deploy/docker-compose.prod.yml --env-file .env build --no-cache app
+            # Build and recreate containers
+            docker compose -f deploy/docker-compose.prod.yml --env-file .env build app
             docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d --force-recreate
 
             # Clean up old dangling images
             docker image prune -f
+
+            # Wait for health check
+            for i in $(seq 1 30); do
+              if wget -qO- http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "Health check passed!"
+                break
+              fi
+              echo "Waiting for app to start... ($i/30)"
+              sleep 2
+            done
 
             echo "Deployed successfully!"
