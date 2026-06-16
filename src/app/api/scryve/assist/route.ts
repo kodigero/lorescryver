@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
 import { assistRequestSchema, validationError } from '@/lib/validation';
 import { sanitizeForPrompt } from '@/lib/sanitize';
+import { checkAiRateLimit } from '@/lib/ai-rate-limit';
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +11,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const rateLimited = await checkAiRateLimit(user);
+    if (rateLimited) return rateLimited;
 
     const parsed = assistRequestSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {

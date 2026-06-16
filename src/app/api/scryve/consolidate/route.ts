@@ -5,6 +5,7 @@ import { chatCompletion } from '@/lib/deepseek';
 import { consolidateRequestSchema, validationError } from '@/lib/validation';
 import { sanitizeObjectForPrompt } from '@/lib/sanitize';
 import type { WizardData } from '@/lib/wizard-state-machine';
+import { checkAiRateLimit } from '@/lib/ai-rate-limit';
 
 
 const ALLOWED_SECTION_KEYS = new Set([
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rateLimited = await checkAiRateLimit(user);
+  if (rateLimited) return rateLimited;
 
   const parsed = consolidateRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

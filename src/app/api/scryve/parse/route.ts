@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { chatCompletion } from '@/lib/deepseek';
 import { parseRequestSchema, validationError } from '@/lib/validation';
+import { checkAiRateLimit } from '@/lib/ai-rate-limit';
 
 const NAME_STEPS = new Set([
   'important_person', 'role_model', 'confidant', 'anchor', 'enemy',
@@ -14,6 +15,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const rateLimited = await checkAiRateLimit(user);
+    if (rateLimited) return rateLimited;
 
     const parsed = parseRequestSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {

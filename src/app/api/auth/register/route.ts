@@ -2,8 +2,18 @@ import { NextResponse } from 'next/server';
 import { hashPassword, setSessionCookie } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { authRegisterSchema, validationError } from '@/lib/validation';
+import { rateLimits } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const { allowed } = await rateLimits.register(ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many registration attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } }
+    );
+  }
+
   const parsed = authRegisterSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(validationError(), { status: 400 });

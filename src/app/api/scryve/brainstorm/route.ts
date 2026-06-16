@@ -4,11 +4,15 @@ import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/deepseek';
 import { brainstormRequestSchema, validationError } from '@/lib/validation';
 import { sanitizeForPrompt } from '@/lib/sanitize';
+import { checkAiRateLimit } from '@/lib/ai-rate-limit';
 
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const rateLimited = await checkAiRateLimit(user);
+    if (rateLimited) return rateLimited;
 
     const parsed = brainstormRequestSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) return NextResponse.json(validationError(), { status: 400 });
