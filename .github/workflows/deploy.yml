@@ -73,17 +73,22 @@ jobs:
             docker image prune -f
 
             # Wait for health check
+            HEALTHY=false
             for i in $(seq 1 30); do
               if wget -qO- http://localhost:3000/api/health > /dev/null 2>&1; then
                 echo "Health check passed!"
+                HEALTHY=true
                 break
               fi
               echo "Waiting for app to start... ($i/30)"
               sleep 2
             done
 
-            echo "Printing container logs for debugging:"
-            docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets logs app
+            if [ "$HEALTHY" = "false" ]; then
+              echo "Health check FAILED! Printing container logs:"
+              docker compose -f deploy/docker-compose.prod.yml --env-file .env --env-file .env.secrets logs app
+              exit 1
+            fi
 
             echo "Deployed successfully!"
 
