@@ -12,11 +12,11 @@ describe('createProjectSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('applies default projectType and wordCountGoal', () => {
+  it('applies default type and wordCountGoal', () => {
     const result = createProjectSchema.safeParse({ title: 'Test' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.projectType).toBe('novel');
+      expect(result.data.type).toBe('FOUNDATION');
       expect(result.data.wordCountGoal).toBe(80000);
     }
   });

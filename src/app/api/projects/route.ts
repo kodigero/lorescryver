@@ -17,7 +17,8 @@ export async function GET() {
       select: {
         id: true,
         title: true,
-        projectType: true,
+        type: true,
+        deliveryFormat: true,
         status: true,
         wordCountGoal: true,
         updatedAt: true,
@@ -52,7 +53,8 @@ export async function POST(request: Request) {
       select: {
         id: true,
         title: true,
-        projectType: true,
+        type: true,
+        deliveryFormat: true,
         status: true,
         wordCountGoal: true,
         updatedAt: true,

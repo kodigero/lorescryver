@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { Phase } from '@prisma/client';
 import {
   createStagingConceptSchema,
   isValidStagingPhaseStage,
@@ -22,7 +23,7 @@ export async function GET(
   if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const requestedPhase = new URL(request.url).searchParams.get('phase');
-  const phase = stagingPhases.find((value) => value === requestedPhase);
+  const phase = stagingPhases.find((value) => value === requestedPhase as Phase);
 
   const concepts = await prisma.stagingConcept.findMany({
     where: { projectId: id, ...(phase && { phase }) },

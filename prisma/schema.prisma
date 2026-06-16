@@ -27,14 +27,73 @@ enum Plan {
   TEAM
 }
 
+// --- Enums ---
+
+enum ProjectType {
+  FOUNDATION
+  DELIVERY
+}
+
+enum DeliveryFormat {
+  NOVEL
+  NOVELLA
+  SHORT_STORY
+  SCREENPLAY
+  TV_SERIES
+  WEB_SERIES
+  STAGE_PLAY
+  MUSICAL
+  VIDEO_GAME
+  VISUAL_NOVEL
+  ANIMATION
+  COMIC
+  MANGA
+  PODCAST
+  TABLETOP_RPG
+  INTERACTIVE_FICTION
+  POETRY
+  NONFICTION
+  OTHER
+}
+
+enum ProjectStatus {
+  IDEATION
+  DRAFTING
+  REVISION
+  PUBLISHED
+}
+
+enum Phase {
+  CONCEPT
+  CANDIDATE
+  CANON
+}
+
+enum Stage {
+  BRAINSTORM
+  RESEARCH
+  REFERENCE
+  CANON_STRESS_TEST
+  EXPANSION_STRESS_TEST
+  LOCKED
+}
+
+enum ChapterStatus {
+  OUTLINE
+  DRAFT
+  REVISION
+  FINAL
+}
+
 // --- Projects ---
 
 model Project {
   id              String             @id @default(cuid())
   title           String
-  projectType     String             @default("novel")
-  status          String             @default("ideation")
-  wordCountGoal   Int                @default(80000)
+  type            ProjectType        @default(FOUNDATION)
+  deliveryFormat  DeliveryFormat?
+  status          ProjectStatus      @default(IDEATION)
+  wordCountGoal   Int?               @default(80000)
   userId          String
   parentId        String?
   user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -73,8 +132,8 @@ model StagingConcept {
   projectId String
   title     String   @default("New Brainstorm")
   summary   String   @default("") @db.Text
-  phase     String   @default("concept")
-  stage     String   @default("brainstorm")
+  phase     Phase    @default(CONCEPT)
+  stage     Stage    @default(BRAINSTORM)
   tags      String[] @default([])
   messages  Json     @default("[]")
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -93,7 +152,7 @@ model Chapter {
   order     Int
   content   Json     @default("{}")
   wordCount Int      @default(0)
-  status    String   @default("outline")
+  status    ChapterStatus @default(OUTLINE)
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Phase } from '@prisma/client';
 import { chatCompletion } from '@/lib/deepseek';
 import { brainstormRequestSchema, validationError } from '@/lib/validation';
 import { sanitizeForPrompt } from '@/lib/sanitize';
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
       projectContext = 'No summary has been written yet. The author is just getting started.';
     }
 
-    const modeInstruction = concept?.phase === 'candidate'
+    const modeInstruction = concept?.phase === Phase.CANDIDATE
       ? `CURRENT MODE:
 You are stress-testing a candidate concept before it can become canon. Compare it against the project context, existing canon, and likely future expansion paths. Flag contradictions, weak logic, missing implications, continuity risks, and places where the author needs a clearer decision. Be constructive: after each concern, suggest 1-3 concrete fixes or options.`
       : `CURRENT MODE:

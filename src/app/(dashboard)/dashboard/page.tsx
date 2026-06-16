@@ -61,7 +61,8 @@ function StatusBadge({ status }: { status: string }) {
 interface Project {
   id: string;
   title: string;
-  projectType: string;
+  type: string;
+  deliveryFormat: string | null;
   status: string;
   wordCountGoal: number;
   updatedAt: string;
@@ -95,7 +96,7 @@ function CreateProjectModal({
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), projectType }),
+        body: JSON.stringify({ title: title.trim(), deliveryFormat: projectType.toUpperCase(), type: 'DELIVERY' }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -386,12 +387,12 @@ export default function DashboardPage() {
                 )}
 
                 <div className="mt-2 flex items-center gap-2">
-                  {project.projectType && (
+                  {project.deliveryFormat && (
                     <span className="text-xs text-muted-foreground">
-                      {projectTypeLabels[project.projectType] || project.projectType}
+                      {projectTypeLabels[project.deliveryFormat.toLowerCase()] || project.deliveryFormat}
                     </span>
                   )}
-                  {project.projectType && <span className="text-white/20">·</span>}
+                  {project.deliveryFormat && <span className="text-white/20">·</span>}
                   <StatusBadge status={project.status} />
                 </div>
 

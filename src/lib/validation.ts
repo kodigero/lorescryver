@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectType, DeliveryFormat, ProjectStatus, Phase, Stage } from '@prisma/client';
 
 export const projectTypes = [
   'novel',
@@ -23,11 +24,10 @@ export const projectTypes = [
 ] as const;
 
 export const projectStatuses = [
-  'ideation',
-  'drafting',
-  'editing',
-  'polishing',
-  'complete',
+  ProjectStatus.IDEATION,
+  ProjectStatus.DRAFTING,
+  ProjectStatus.REVISION,
+  ProjectStatus.PUBLISHED,
 ] as const;
 
 export const summarySectionKeys = [
@@ -40,14 +40,16 @@ export const summarySectionKeys = [
 
 export const createProjectSchema = z.object({
   title: z.string().trim().min(1).max(200),
-  projectType: z.enum(projectTypes).default('novel'),
-  wordCountGoal: z.number().int().positive().max(10000000).default(80000),
+  type: z.nativeEnum(ProjectType).default(ProjectType.FOUNDATION),
+  deliveryFormat: z.nativeEnum(DeliveryFormat).optional(),
+  wordCountGoal: z.number().int().positive().max(10000000).optional(),
 });
 
 export const updateProjectSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  projectType: z.enum(projectTypes).optional(),
-  status: z.enum(projectStatuses).optional(),
+  type: z.nativeEnum(ProjectType).optional(),
+  deliveryFormat: z.nativeEnum(DeliveryFormat).optional(),
+  status: z.nativeEnum(ProjectStatus).optional(),
   wordCountGoal: z.number().int().positive().max(10000000).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field is required',
@@ -74,23 +76,23 @@ const chatMessageSchema = z.object({
   content: z.string().min(1).max(8000),
 });
 
-export const stagingPhases = ['concept', 'candidate', 'canon'] as const;
+export const stagingPhases = [Phase.CONCEPT, Phase.CANDIDATE, Phase.CANON] as const;
 export const stagingStages = [
-  'brainstorm',
-  'research',
-  'reference',
-  'canon_stress_test',
-  'expansion_stress_test',
-  'locked',
+  Stage.BRAINSTORM,
+  Stage.RESEARCH,
+  Stage.REFERENCE,
+  Stage.CANON_STRESS_TEST,
+  Stage.EXPANSION_STRESS_TEST,
+  Stage.LOCKED,
 ] as const;
 
 export type StagingPhase = typeof stagingPhases[number];
 export type StagingStage = typeof stagingStages[number];
 
 export const stagingPhaseStageMap: Record<StagingPhase, readonly StagingStage[]> = {
-  concept: ['brainstorm', 'research', 'reference'],
-  candidate: ['canon_stress_test', 'expansion_stress_test'],
-  canon: ['locked'],
+  [Phase.CONCEPT]: [Stage.BRAINSTORM, Stage.RESEARCH, Stage.REFERENCE],
+  [Phase.CANDIDATE]: [Stage.CANON_STRESS_TEST, Stage.EXPANSION_STRESS_TEST],
+  [Phase.CANON]: [Stage.LOCKED],
 };
 
 export function isValidStagingPhaseStage(
@@ -153,15 +155,15 @@ export const brainstormRequestSchema = z.object({
 });
 
 export const createStagingConceptSchema = z.object({
-  phase: z.enum(stagingPhases).optional().default('concept'),
-  stage: z.enum(stagingStages).optional(),
+  phase: z.nativeEnum(Phase).optional().default(Phase.CONCEPT),
+  stage: z.nativeEnum(Stage).optional(),
 });
 
 export const updateStagingConceptSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   summary: z.string().max(20000).optional(),
-  phase: z.enum(stagingPhases).optional(),
-  stage: z.enum(stagingStages).optional(),
+  phase: z.nativeEnum(Phase).optional(),
+  stage: z.nativeEnum(Stage).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
   messages: z.array(chatMessageSchema).max(100).optional(),
 }).refine((value) => Object.keys(value).length > 0, {

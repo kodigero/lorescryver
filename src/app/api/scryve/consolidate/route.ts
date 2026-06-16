@@ -53,12 +53,13 @@ Respond ONLY with valid JSON:
 
 Do not include any text before or after the JSON.`;
 
-function buildUserMessage(project: { title: string; projectType: string }, data: WizardData): string {
+function buildUserMessage(project: { title: string; type: string; deliveryFormat: string | null }, data: WizardData): string {
   const notesSection = data.notes && data.notes.length > 0
     ? `\nADDITIONAL NOTES:\n${data.notes.map(n => `- ${n}`).join('\n')}`
     : '';
 
-  return `Project: "${project.title}" (${project.projectType})
+  const formatStr = project.type === 'DELIVERY' && project.deliveryFormat ? project.deliveryFormat : project.type;
+  return `Project: "${project.title}" (${formatStr})
 
 PROTAGONIST:
 - Name: ${data.protagonistName || '(not yet provided)'}
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
     }
 
     const userMessage = buildUserMessage(
-      { title: project.title, projectType: project.projectType },
+      { title: project.title, type: project.type, deliveryFormat: project.deliveryFormat },
       wizardData
     );
 
