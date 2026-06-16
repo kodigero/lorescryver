@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import { getAuthSecret, SESSION_COOKIE } from './auth-shared';
+import { redis } from './redis';
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const PASSWORD_ITERATIONS = 210000;
@@ -11,6 +12,7 @@ const PASSWORD_DIGEST = 'sha256';
 type SessionPayload = {
   userId: string;
   exp: number;
+  sessionId?: string;
 };
 
 
@@ -47,11 +49,17 @@ export function verifyPassword(password: string, storedHash: string | null) {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
-export function createSessionToken(userId: string) {
+export async function createSessionToken(userId: string) {
+  const sessionId = crypto.randomUUID();
   const payload: SessionPayload = {
     userId,
+    sessionId,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
+  
+  // Store session in Redis
+  await redis.setex(`session:${sessionId}`, SESSION_TTL_SECONDS, userId);
+
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   return `${encodedPayload}.${sign(encodedPayload)}`;
 }
@@ -76,6 +84,14 @@ export async function getCurrentUser() {
   const session = verifySessionToken(token);
   if (!session) return null;
 
+  if (session.sessionId) {
+    const valid = await redis.get(`session:${session.sessionId}`);
+    if (!valid) return null; // Revoked or expired in Redis
+    
+    // A3: Sliding window refresh — extend Redis TTL on active use
+    await redis.expire(`session:${session.sessionId}`, SESSION_TTL_SECONDS);
+  }
+
   return prisma.user.findUnique({
     where: { id: session.userId },
     select: {
@@ -90,11 +106,12 @@ export async function getCurrentUser() {
   });
 }
 
-export function setSessionCookie(response: Response, userId: string) {
+export async function setSessionCookie(response: Response, userId: string) {
+  const token = await createSessionToken(userId);
   response.headers.append(
     'Set-Cookie',
     [
-      `${SESSION_COOKIE}=${createSessionToken(userId)}`,
+      `${SESSION_COOKIE}=${token}`,
       'Path=/',
       `Max-Age=${SESSION_TTL_SECONDS}`,
       'HttpOnly',

@@ -31,6 +31,6 @@ export async function POST(request: Request) {
   const response = NextResponse.json({
     user: { id: user.id, email: user.email, name: user.name, plan: user.plan },
   });
-  setSessionCookie(response, user.id);
+  await setSessionCookie(response, user.id);
   return response;
 }

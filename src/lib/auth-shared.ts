@@ -46,7 +46,7 @@ function base64urlToBytes(b64url: string): Uint8Array {
  */
 export async function verifyTokenEdge(
   token: string
-): Promise<{ userId: string; exp: number } | null> {
+): Promise<{ userId: string; exp: number; sessionId?: string } | null> {
   const dotIndex = token.indexOf('.');
   if (dotIndex < 0) return null;
 
@@ -79,7 +79,7 @@ export async function verifyTokenEdge(
 
     // Decode base64url payload and check expiry
     const jsonStr = atob(encodedPayload.replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(jsonStr) as { userId: string; exp: number };
+    const payload = JSON.parse(jsonStr) as { userId: string; exp: number; sessionId?: string };
 
     if (!payload.userId || payload.exp < Math.floor(Date.now() / 1000)) {
       return null;

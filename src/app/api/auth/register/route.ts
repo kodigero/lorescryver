@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     });
 
     const response = NextResponse.json({ user }, { status: 201 });
-    setSessionCookie(response, user.id);
+    await setSessionCookie(response, user.id);
     return response;
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
