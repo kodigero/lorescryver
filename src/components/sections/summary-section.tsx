@@ -35,10 +35,10 @@ export default function SummarySection({ projectId }: { projectId: string }) {
   useEffect(() => {
     fetch(`/api/projects/${projectId}/sections`)
       .then(r => r.json())
-      .then(data => {
+      .then(body => {
         const mapped: Record<string, string> = {};
         let found = false;
-        for (const [key, val] of Object.entries(data)) {
+        for (const [key, val] of Object.entries(body.data || {})) {
           const content = (val as { content: string }).content || '';
           mapped[key] = content;
           if (key.startsWith('summary.') && content.trim()) found = true;
@@ -80,8 +80,8 @@ export default function SummarySection({ projectId }: { projectId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, wizardData, previewOnly: true }),
       })
-        .then(res => res.json().then(result => {
-          setSynopsisText(res.ok && result.sections ? (result.sections['summary.synopsis'] || 'Not enough information yet.') : 'Could not generate synopsis.');
+        .then(res => res.json().then(body => {
+          setSynopsisText(res.ok && body.data?.sections ? (body.data.sections['summary.synopsis'] || 'Not enough information yet.') : 'Could not generate synopsis.');
         }))
         .catch(() => setSynopsisText('Something went wrong.'))
         .finally(() => setSynopsisLoading(false));
@@ -159,7 +159,7 @@ export default function SummarySection({ projectId }: { projectId: string }) {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Consolidation failed');
-      setSectionData(prev => ({ ...prev, ...result.sections }));
+      setSectionData(prev => ({ ...prev, ...result.data?.sections }));
       setHasContent(true);
       setWizardActive(false);
     } catch (err) {

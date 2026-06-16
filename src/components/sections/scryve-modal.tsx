@@ -86,8 +86,8 @@ export function ScryveModal({ isOpen, onClose, currentStep, wizardData, onLockIn
           },
         }),
       });
-      const data = await res.json();
-      const content = data.content || 'Hmm, try asking again!';
+      const resData = await res.json();
+      const content = resData.data?.content || 'Hmm, try asking again!';
       const lockMatch = content.match(/<<LOCK:(.+?)>>/);
       if (lockMatch) {
         const locked = lockMatch[1].trim();

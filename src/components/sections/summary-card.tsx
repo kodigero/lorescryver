@@ -25,7 +25,8 @@ export function SummaryCard({ card, projectId, initialContent }: { card: CardDef
     if (text === lastSavedRef.current) return;
     setSaveState('saving');
     try {
-      await fetch(`/api/projects/${projectId}/sections`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: card.key, content: text }) });
+      const res = await fetch(`/api/projects/${projectId}/sections`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: card.key, content: text }) });
+      if (!res.ok) throw new Error('Save failed');
       lastSavedRef.current = text;
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 1500);

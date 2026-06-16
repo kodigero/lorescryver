@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import type { Project } from '@/types/project';
 import { useRouter } from 'next/navigation';
 import { Plus as PlusIcon, MoreHorizontal as MoreIcon, Trash2 as TrashIcon, Pencil as PenIcon, ChevronDown as ChevronDownIcon } from 'lucide-react';
 import { ScryveIcon as QuillIcon } from '@/components/icons';
@@ -56,18 +57,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/* ── Types ──────────────────────────────────────────────────────────── */
-
-interface Project {
-  id: string;
-  title: string;
-  type: string;
-  deliveryFormat: string | null;
-  status: string;
-  wordCountGoal: number;
-  updatedAt: string;
-}
-
 /* ── Create Project Modal ───────────────────────────────────────────── */
 
 function CreateProjectModal({
@@ -103,7 +92,7 @@ function CreateProjectModal({
         setError(body?.error || 'Project could not be created');
         return;
       }
-      const project = await res.json();
+      const { data: project } = await res.json();
       onCreated(project);
       setTitle('');
       setProjectType('novel');
@@ -214,8 +203,8 @@ export default function DashboardPage() {
         if (!r.ok) throw new Error('Failed to load projects');
         return r.json();
       })
-      .then((data) => {
-        setProjects(data);
+      .then((body) => {
+        setProjects(body.data);
         setLoaded(true);
       })
       .catch(() => {
@@ -286,7 +275,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ title: editTitle.trim() }),
       });
       if (!res.ok) throw new Error('Update failed');
-      const updated = await res.json();
+      const { data: updated } = await res.json();
       setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
       setEditingId(null);
     } catch {
@@ -387,17 +376,23 @@ export default function DashboardPage() {
                 )}
 
                 <div className="mt-2 flex items-center gap-2">
-                  {project.deliveryFormat && (
-                    <span className="text-xs text-muted-foreground">
-                      {projectTypeLabels[project.deliveryFormat.toLowerCase()] || project.deliveryFormat}
+                  {project.type === 'FOUNDATION' ? (
+                    <span className="text-xs text-brand-400 font-medium">
+                      Story Foundation
                     </span>
+                  ) : (
+                    project.deliveryFormat && (
+                      <span className="text-xs text-muted-foreground">
+                        {projectTypeLabels[project.deliveryFormat.toLowerCase()] || project.deliveryFormat}
+                      </span>
+                    )
                   )}
-                  {project.deliveryFormat && <span className="text-white/20">·</span>}
+                  {(project.type === 'FOUNDATION' || project.deliveryFormat) && <span className="text-white/20">·</span>}
                   <StatusBadge status={project.status} />
                 </div>
 
                 <div className="mt-3 text-xs text-muted-foreground">
-                  Goal: {project.wordCountGoal.toLocaleString()} words
+                  Goal: {project.wordCountGoal !== null && project.wordCountGoal !== undefined ? `${project.wordCountGoal.toLocaleString()} words` : 'No word goal'}
                 </div>
 
                 <div className="mt-1 text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProjectType, DeliveryFormat, ProjectStatus, Phase, Stage } from '@prisma/client';
+import { ProjectType, DeliveryFormat, ProjectStatus, Phase, Stage, ChapterStatus } from '@prisma/client';
 
 export const projectTypes = [
   'novel',
@@ -42,7 +42,7 @@ export const createProjectSchema = z.object({
   title: z.string().trim().min(1).max(200),
   type: z.nativeEnum(ProjectType).default(ProjectType.FOUNDATION),
   deliveryFormat: z.nativeEnum(DeliveryFormat).optional(),
-  wordCountGoal: z.number().int().positive().max(10000000).optional(),
+  wordCountGoal: z.number().int().positive().max(10000000).optional().default(80000),
 });
 
 export const updateProjectSchema = z.object({
@@ -170,6 +170,43 @@ export const updateStagingConceptSchema = z.object({
   message: 'At least one field is required',
 });
 
+export const createChapterSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  order: z.number().int().nonnegative(),
+  content: z.record(z.string(), z.any()).optional(),
+  wordCount: z.number().int().nonnegative().optional(),
+  status: z.nativeEnum(ChapterStatus).optional(),
+});
+
+export const updateChapterSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  order: z.number().int().nonnegative().optional(),
+  content: z.record(z.string(), z.any()).optional(),
+  wordCount: z.number().int().nonnegative().optional(),
+  status: z.nativeEnum(ChapterStatus).optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field is required',
+});
+
+export const createBibleEntrySchema = z.object({
+  type: z.string().trim().min(1).max(50),
+  name: z.string().trim().min(1).max(200),
+  description: z.string().max(10000).optional().default(''),
+  properties: z.record(z.string(), z.any()).optional().default({}),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).optional().default([]),
+});
+
+export const updateBibleEntrySchema = z.object({
+  type: z.string().trim().min(1).max(50).optional(),
+  name: z.string().trim().min(1).max(200).optional(),
+  description: z.string().max(10000).optional(),
+  properties: z.record(z.string(), z.any()).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field is required',
+});
+
 export function validationError() {
   return { error: 'Invalid request body' };
 }
+

@@ -97,7 +97,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     fetch('/api/auth/me')
       .then((response) => response.ok ? response.json() : null)
       .then((body) => {
-        if (body?.user) setUser(body.user);
+        if (body?.data?.user) setUser(body.data.user);
       })
       .catch(() => {});
   }, []);

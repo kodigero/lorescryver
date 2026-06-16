@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import type { Project } from '@/types/project';
 import { useParams } from 'next/navigation';
 import { ArrowLeft as ArrowLeftIcon, LayoutDashboard as LayoutDashboardIcon, Map as MapIcon, BookOpen as BookOpenIcon, Layers as LayersIcon, Lightbulb as LightbulbIcon, FlaskConical as FlaskIcon, Bookmark as BookmarkIcon, Search as SearchIcon, PenLine as PenLineIcon, Trash2 as TrashIcon, ChevronDown as ChevronDownIcon, Plus as PlusIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useDomain } from '@/contexts/domain-context';
@@ -97,15 +98,6 @@ const projectTypeLabels: Record<string, string> = {
 
 /* -- Types -- */
 
-interface Project {
-  id: string;
-  title: string;
-  projectType: string;
-  status: string;
-  wordCountGoal: number;
-  updatedAt: string;
-}
-
 /* -- Page -- */
 
 export default function ProjectPage() {
@@ -130,9 +122,10 @@ export default function ProjectPage() {
   useEffect(() => {
     fetch(`/api/projects/${projectId}`)
       .then((r) => r.json())
-      .then((data) => {
-        setProject(data);
-        const pType = data.projectType || 'novel';
+      .then((res) => {
+        const proj = res.data;
+        setProject(proj);
+        const pType = (proj.deliveryFormat || '').toLowerCase() || 'novel';
         setActiveDeliveryType(pType);
         setDeliveryLabel(projectTypeLabels[pType] || pType);
         setLoading(false);
@@ -284,7 +277,9 @@ export default function ProjectPage() {
               {project.title}
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {projectTypeLabels[project.projectType] || project.projectType}
+              {project.type === 'FOUNDATION'
+                ? 'Story Foundation'
+                : (projectTypeLabels[(project.deliveryFormat || '').toLowerCase()] || project.deliveryFormat)}
             </p>
           </div>
         </div>

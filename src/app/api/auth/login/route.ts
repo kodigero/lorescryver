@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({
-    user: { id: user.id, email: user.email, name: user.name, plan: user.plan },
+    data: { user: { id: user.id, email: user.email, name: user.name, plan: user.plan } },
   });
   await setSessionCookie(response, user.id);
   return response;

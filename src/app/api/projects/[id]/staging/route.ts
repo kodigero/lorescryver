@@ -31,7 +31,7 @@ export async function GET(
     orderBy: { updatedAt: 'desc' },
   });
 
-  return NextResponse.json(concepts);
+  return NextResponse.json({ data: concepts });
 }
 
 // POST /api/projects/:id/staging - create a new concept
@@ -67,5 +67,5 @@ export async function POST(
     },
   });
 
-  return NextResponse.json(concept, { status: 201 });
+  return NextResponse.json({ data: concept }, { status: 201 });
 }

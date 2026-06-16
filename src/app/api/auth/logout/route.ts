@@ -13,7 +13,7 @@ export async function POST() {
     await redis.del(`session:${session.sessionId}`);
   }
 
-  const response = NextResponse.json({ success: true });
+  const response = NextResponse.json({ data: { success: true } });
   clearSessionCookie(response);
   return response;
 }

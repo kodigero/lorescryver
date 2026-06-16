@@ -57,7 +57,7 @@ YOUR RULES:
       { temperature: 0.7, maxTokens: 300 }
     );
 
-    return NextResponse.json({ content: result.content });
+    return NextResponse.json({ data: { content: result.content } });
   } catch (err) {
     console.error('Assist error:', err);
     return NextResponse.json({ error: 'Failed to get response' }, { status: 500 });

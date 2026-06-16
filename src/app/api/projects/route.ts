@@ -25,7 +25,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(projects);
+    return NextResponse.json({ data: projects });
   } catch (error) {
     console.error('Project list error:', error);
     return NextResponse.json({ error: 'Failed to load projects' }, { status: 500 });
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(project, { status: 201 });
+    return NextResponse.json({ data: project }, { status: 201 });
   } catch (error) {
     console.error('Project create error:', error);
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });

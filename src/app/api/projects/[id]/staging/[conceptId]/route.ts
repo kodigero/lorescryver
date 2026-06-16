@@ -24,7 +24,7 @@ export async function GET(
   });
   if (!concept) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  return NextResponse.json(concept);
+  return NextResponse.json({ data: concept });
 }
 
 // PUT - update concept
@@ -59,7 +59,7 @@ export async function PUT(
     },
   });
 
-  return NextResponse.json(concept);
+  return NextResponse.json({ data: concept });
 }
 
 // DELETE - delete concept
@@ -79,5 +79,5 @@ export async function DELETE(
 
   await prisma.stagingConcept.delete({ where: { id: conceptId } });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ data: { ok: true } });
 }

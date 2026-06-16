@@ -40,41 +40,74 @@ export async function chatCompletion(
     throw new Error('DEEPSEEK_API_KEY is not set');
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const maxRetries = 3;
+  let attempt = 0;
+  let delay = 1000;
 
-  const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    signal: controller.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-      messages,
-      temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 4096,
-    }),
-  }).finally(() => clearTimeout(timeout));
+  while (attempt < maxRetries) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
-  if (!response.ok) {
-    // Read error body but never log it raw — it may contain the API key
-    const errorBody = await response.text().catch(() => 'Unable to read error body');
-    const safeError = errorBody.slice(0, 200).replace(/sk-[a-zA-Z0-9]+/g, '[REDACTED]');
-    console.error(`DeepSeek API error (${response.status}): ${safeError}`);
-    throw new Error(`AI service error (${response.status}). Please try again.`);
+    try {
+      const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+          messages,
+          temperature: options?.temperature ?? 0.7,
+          max_tokens: options?.maxTokens ?? 4096,
+        }),
+      }).finally(() => clearTimeout(timeout));
+
+      if (!response.ok) {
+        if (response.status === 429 || (response.status >= 500 && response.status < 600)) {
+          attempt++;
+          if (attempt < maxRetries) {
+            console.warn(
+              `DeepSeek API returned status ${response.status}. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2;
+            continue;
+          }
+        }
+        // Read error body but never log it raw — it may contain the API key
+        const errorBody = await response.text().catch(() => 'Unable to read error body');
+        const safeError = errorBody.slice(0, 200).replace(/sk-[a-zA-Z0-9]+/g, '[REDACTED]');
+        console.error(`DeepSeek API error (${response.status}): ${safeError}`);
+        throw new Error(`AI service error (${response.status}). Please try again.`);
+      }
+
+      const data: DeepSeekResponse = await response.json();
+      const choice = data.choices[0];
+
+      if (!choice) {
+        throw new Error('No response from DeepSeek');
+      }
+
+      return {
+        content: choice.message.content,
+        usage: data.usage,
+      };
+    } catch (err) {
+      // Don't retry if it was an explicit abort not due to our timeout
+      if (err instanceof Error && err.name === 'AbortError' && attempt >= maxRetries) {
+        throw err;
+      }
+      attempt++;
+      if (attempt >= maxRetries) {
+        throw err;
+      }
+      console.warn(`DeepSeek API connection attempt ${attempt} failed: ${err}. Retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
   }
 
-  const data: DeepSeekResponse = await response.json();
-  const choice = data.choices[0];
-
-  if (!choice) {
-    throw new Error('No response from DeepSeek');
-  }
-
-  return {
-    content: choice.message.content,
-    usage: data.usage,
-  };
+  throw new Error('AI request failed after maximum retries');
 }

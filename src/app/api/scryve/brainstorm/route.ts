@@ -93,10 +93,15 @@ YOUR ROLE:
 
     // Save messages to concept (including new AI response)
     if (conceptId) {
-      const allMessages = [
+      let allMessages = [
         ...messages,
         { role: 'assistant' as const, content: result.content },
       ];
+
+      if (allMessages.length > 100) {
+        // Keep the first message (greeting) and the last 99 messages
+        allMessages = [allMessages[0], ...allMessages.slice(allMessages.length - 99)];
+      }
 
       const updateData: Record<string, unknown> = { messages: allMessages };
 
@@ -114,7 +119,7 @@ YOUR ROLE:
       });
     }
 
-    return NextResponse.json({ content: result.content });
+    return NextResponse.json({ data: { content: result.content } });
   } catch (err) {
     console.error('Brainstorm error:', err);
     return NextResponse.json({ error: 'Failed to get response' }, { status: 500 });

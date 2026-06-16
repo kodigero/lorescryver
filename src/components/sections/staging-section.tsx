@@ -76,7 +76,7 @@ export default function StagingSection({ projectId, phase }: { projectId: string
     setMessages([]);
     fetch(`/api/projects/${projectId}/staging?phase=${phase}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setConcepts(data))
+      .then((body) => setConcepts(body.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [projectId, phase]);
@@ -101,7 +101,7 @@ export default function StagingSection({ projectId, phase }: { projectId: string
         body: JSON.stringify({ phase: 'concept', stage: 'brainstorm' }),
       });
       if (res.ok) {
-        const concept = await res.json();
+        const { data: concept } = await res.json();
         setConcepts((prev) => [
           {
             id: concept.id,
@@ -128,10 +128,10 @@ export default function StagingSection({ projectId, phase }: { projectId: string
     setMessages([]);
     try {
       const res = await fetch(`/api/projects/${projectId}/staging/${id}`);
-      if (res.ok) {
-        const concept = await res.json();
-        setMessages(Array.isArray(concept.messages) ? concept.messages : []);
-      }
+        if (res.ok) {
+          const { data: concept } = await res.json();
+          setMessages(Array.isArray(concept.messages) ? concept.messages : []);
+        }
     } catch {
       /* ignore */
     }
@@ -170,7 +170,8 @@ export default function StagingSection({ projectId, phase }: { projectId: string
       });
 
       if (res.ok) {
-        const { content } = await res.json();
+        const body = await res.json();
+        const content = body.data?.content || '';
         setMessages((prev) => [...prev, { role: 'assistant', content }]);
 
         // Update title in sidebar from first user message

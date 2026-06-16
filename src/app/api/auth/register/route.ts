@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       select: { id: true, email: true, name: true, plan: true },
     });
 
-    const response = NextResponse.json({ user }, { status: 201 });
+    const response = NextResponse.json({ data: { user } }, { status: 201 });
     await setSessionCookie(response, user.id);
     return response;
   } catch (error) {

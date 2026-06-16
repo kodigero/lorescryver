@@ -172,7 +172,7 @@ export async function POST(request: Request) {
       await Promise.all(upserts);
     }
 
-    return NextResponse.json({ sections, usage: result.usage });
+    return NextResponse.json({ data: { sections, usage: result.usage } });
   } catch (error) {
     console.error('Scryve consolidation error:', error);
     return NextResponse.json(

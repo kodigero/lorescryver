@@ -35,7 +35,7 @@ export async function GET(
       data[s.key] = { content: s.content, updatedAt: s.updatedAt.toISOString() };
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({ data });
   } catch (error) {
     console.error('Project sections read error:', error);
     return NextResponse.json({ error: 'Failed to load sections' }, { status: 500 });
@@ -75,7 +75,7 @@ export async function PUT(
       create: { projectId: id, key, content },
     });
 
-    return NextResponse.json({ key: section.key, content: section.content, updatedAt: section.updatedAt });
+    return NextResponse.json({ data: { key: section.key, content: section.content, updatedAt: section.updatedAt } });
   } catch (error) {
     console.error('Project section write error:', error);
     return NextResponse.json({ error: 'Failed to save section' }, { status: 500 });

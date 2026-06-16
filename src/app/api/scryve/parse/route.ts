@@ -60,9 +60,9 @@ ${isNameStep ? `This is a CHARACTER NAME question. The user should provide a nam
 
     try {
       const parsed = JSON.parse(content);
-      return NextResponse.json(parsed);
+      return NextResponse.json({ data: parsed });
     } catch {
-      return NextResponse.json({ intent: 'answer', name: answer, value: answer });
+      return NextResponse.json({ data: { intent: 'answer', name: answer, value: answer } });
     }
   } catch (err) {
     console.error('Parse error:', err);
